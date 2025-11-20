@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import request from 'supertest';
-import app from '../../index';
+import app from '@app/index';
 
 describe('Boards API', () => {
   it('GET /api/boards should return 200 and array', async () => {
