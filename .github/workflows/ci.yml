@@ -141,6 +141,9 @@ jobs:
       - name: Install Playwright browsers
         working-directory: ./frontend
         run: npx playwright install --with-deps chromium
+
+      - name: List Playwright report directory (debug)
+        run: ls -l frontend/playwright-report || true
       
       - name: Run E2E tests
         working-directory: ./frontend
