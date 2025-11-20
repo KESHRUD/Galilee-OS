@@ -31,7 +31,7 @@ app.use('/api/boards', boardsRouter);
 // Error handling (must be last)
 app.use(errorHandler);
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.START_SERVER !== 'false') {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📋 Environment: ${process.env.NODE_ENV || 'development'}`);
