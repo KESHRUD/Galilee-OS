@@ -118,6 +118,17 @@ test.describe('Offline Task Management', () => {
     // Go offline
     await page.context().setOffline(true);
 
+    // Wait for app initialization
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
+
+    // Select board if board selector exists
+    const boardItem = page.locator('[data-testid="board-item"]').first();
+    if (await boardItem.count() > 0 && await boardItem.isVisible()) {
+      await boardItem.click();
+      await page.waitForTimeout(500);
+    }
+
     // Open the modal by clicking '+ New Task' button
     const newTaskBtn = page.locator('button.btn-create');
     await expect(newTaskBtn).toBeVisible({ timeout: 10000 });
@@ -127,6 +138,12 @@ test.describe('Offline Task Management', () => {
     // Now interact with the modal's 'Create Task' button
     const createBtn = page.locator('button.btn-primary');
     await expect(createBtn).toBeVisible({ timeout: 10000 });
+    // Debug: log button state if disabled
+    if (!(await createBtn.isEnabled())) {
+      const disabledAttr = await createBtn.getAttribute('disabled');
+      const classes = await createBtn.getAttribute('class');
+      console.log('Create button debug:', { disabledAttr, classes });
+    }
     await expect(createBtn).toBeEnabled({ timeout: 10000 });
     await createBtn.click();
 
@@ -156,6 +173,17 @@ test.describe('Offline Task Management', () => {
       await dialog.accept('Sync Test Task');
     });
 
+    // Wait for app initialization
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(500);
+
+    // Select board if board selector exists
+    const boardItem = page.locator('[data-testid="board-item"]').first();
+    if (await boardItem.count() > 0 && await boardItem.isVisible()) {
+      await boardItem.click();
+      await page.waitForTimeout(500);
+    }
+
     // Open the modal by clicking '+ New Task' button
     const newTaskBtn = page.locator('button.btn-create');
     await expect(newTaskBtn).toBeVisible({ timeout: 10000 });
@@ -165,6 +193,12 @@ test.describe('Offline Task Management', () => {
     // Now interact with the modal's 'Create Task' button
     const createBtn = page.locator('button.btn-primary');
     await expect(createBtn).toBeVisible({ timeout: 10000 });
+    // Debug: log button state if disabled
+    if (!(await createBtn.isEnabled())) {
+      const disabledAttr = await createBtn.getAttribute('disabled');
+      const classes = await createBtn.getAttribute('class');
+      console.log('Create button debug:', { disabledAttr, classes });
+    }
     await expect(createBtn).toBeEnabled({ timeout: 10000 });
     await createBtn.click();
     await page.waitForTimeout(1000);
