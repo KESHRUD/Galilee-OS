@@ -129,8 +129,11 @@ test.describe('Drag and Drop Functionality', () => {
     const todoColumn = page.locator('.kanban-column').first();
     let tasksBefore = await todoColumn.locator('.task-card').count();
     while (tasksBefore > 0) {
-      // Always delete the first task until none remain
+      // Handle dialog confirmation for each delete
+      page.once('dialog', dialog => dialog.accept());
       const deleteButton = todoColumn.locator('.task-delete').first();
+      await expect(deleteButton).toBeVisible({ timeout: 5000 });
+      await expect(deleteButton).toBeEnabled({ timeout: 5000 });
       await deleteButton.click();
       await page.waitForTimeout(200);
       tasksBefore = await todoColumn.locator('.task-card').count();
