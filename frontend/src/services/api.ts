@@ -1,88 +1,44 @@
-import type { Task, CreateTaskDTO, UpdateTaskDTO } from '../types';
+import { Task } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = '/api/sessions';
 
-interface ApiResponse<T> {
-  data: T;
-  error?: string;
-}
-
-class ApiService {
-  private async request<T>(
-    endpoint: string,
-    options?: RequestInit
-  ): Promise<ApiResponse<T>> {
+export const apiService = {
+  getAllSessions: async (): Promise<Task[]> => {
     try {
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options?.headers,
-        },
-        ...options,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Request failed');
-      }
-
-      if (response.status === 204) {
-        return { data: null as T };
-      }
-
+      const response = await fetch(API_URL);
+      if (!response.ok) throw new Error('Failed to fetch sessions');
       return await response.json();
     } catch (error) {
-      console.error('API Error:', error);
-      throw error;
+      console.error('API Error (Offline?):', error);
+      // Fallback to offline storage logic or return empty
+      return [];
     }
-  }
+  },
 
-  // Tasks
-  async getTasks(): Promise<Task[]> {
-    const response = await this.request<Task[]>('/api/tasks');
-    return response.data;
-  }
-
-  async getTask(id: string): Promise<Task> {
-    const response = await this.request<Task>(`/api/tasks/${id}`);
-    return response.data;
-  }
-
-  async createTask(task: CreateTaskDTO): Promise<Task> {
-    const response = await this.request<Task>('/api/tasks', {
+  createSession: async (session: Partial<Task>): Promise<Task> => {
+    const response = await fetch(API_URL, {
       method: 'POST',
-      body: JSON.stringify(task),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(session),
     });
-    return response.data;
-  }
+    if (!response.ok) throw new Error('Failed to create session');
+    return await response.json();
+  },
 
-  async updateTask(id: string, task: UpdateTaskDTO): Promise<Task> {
-    const response = await this.request<Task>(`/api/tasks/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(task),
+  updateSession: async (id: string, updates: Partial<Task>): Promise<Task> => {
+    const response = await fetch(`${API_URL}/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
     });
-    return response.data;
-  }
+    if (!response.ok) throw new Error('Failed to update session');
+    return await response.json();
+  },
 
-  async deleteTask(id: string): Promise<void> {
-    await this.request<void>(`/api/tasks/${id}`, {
+  deleteSession: async (id: string): Promise<void> => {
+    const response = await fetch(`${API_URL}/${id}`, {
       method: 'DELETE',
     });
+    if (!response.ok) throw new Error('Failed to delete session');
   }
-
-  // Boards
-  async getBoards() {
-    const response = await this.request('/api/boards');
-    return response.data;
-  }
-
-  async createBoard(name: string) {
-    const response = await this.request('/api/boards', {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    });
-    return response.data;
-  }
-}
-
-export const apiService = new ApiService();
+};

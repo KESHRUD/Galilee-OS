@@ -1,20 +1,11 @@
-// ============================================================================
-// MSW Browser Setup
-// Configures Mock Service Worker for browser (development mode)
-// ============================================================================
+// MSW Browser setup for development
+import { setupWorker } from "msw/browser";
+import { handlers } from "./handlers";
 
-import { setupWorker } from 'msw/browser';
-import { handlers } from './handlers';
-
-// Create worker with all handlers
 export const worker = setupWorker(...handlers);
 
-// Start worker with options
-export const startMockWorker = () => {
+export async function startMockWorker() {
   return worker.start({
-    onUnhandledRequest: 'bypass', // Don't warn about unhandled requests
-    serviceWorker: {
-      url: '/mockServiceWorker.js', // Path to service worker
-    },
+    onUnhandledRequest: "bypass",
   });
-};
+}

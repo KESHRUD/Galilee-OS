@@ -1,290 +1,150 @@
-// ============================================================================
-// MSW Handlers - Mock API Routes
-// Simulates backend API for offline development and testing
-// ============================================================================
+import { http, HttpResponse, delay } from "msw";
+import { Task, Column } from "../types";
 
-import { http, HttpResponse } from 'msw';
-
-// Type definitions for request bodies
-interface CreateTaskBody {
-  title: string;
-  description?: string;
-  status?: string;
-  priority?: string;
-}
-
-interface UpdateTaskBody {
-  title?: string;
-  description?: string;
-  status?: string;
-  priority?: string;
-}
-
-interface CreateBoardBody {
-  name: string;
-}
-
-// In-memory storage for mock data
-let tasks = [
+// In-memory database for MSW
+let tasks: Task[] = [
   {
-    id: '1',
-    title: 'Setup project structure',
-    description: 'Initialize frontend and backend with proper folder structure',
-    status: 'done',
-    priority: 'high',
-    createdAt: new Date('2024-11-01').toISOString(),
-    updatedAt: new Date('2024-11-01').toISOString(),
+    id: "t-1",
+    title: "Setup project structure",
+    description: "Initialize the Kanban PWA with Vite and React",
+    columnId: "todo",
+    tags: ["setup", "frontend"],
+    priority: "high",
+    createdAt: Date.now() - 86400000,
+    subtasks: [],
+    comments: [],
   },
   {
-    id: '2',
-    title: 'Implement drag and drop',
-    description: 'Add @dnd-kit for smooth task movement between columns',
-    status: 'done',
-    priority: 'high',
-    createdAt: new Date('2024-11-10').toISOString(),
-    updatedAt: new Date('2024-11-15').toISOString(),
+    id: "t-2",
+    title: "Implement drag and drop",
+    description: "Add HTML5 drag and drop functionality",
+    columnId: "in-progress",
+    tags: ["feature", "ux"],
+    priority: "medium",
+    createdAt: Date.now() - 43200000,
+    subtasks: [],
+    comments: [],
   },
   {
-    id: '3',
-    title: 'Add offline support',
-    description: 'Implement Service Worker and IndexedDB for offline functionality',
-    status: 'in-progress',
-    priority: 'high',
-    createdAt: new Date('2024-11-15').toISOString(),
-    updatedAt: new Date('2024-11-18').toISOString(),
-  },
-  {
-    id: '4',
-    title: 'Write E2E tests',
-    description: 'Create Playwright tests for critical user flows',
-    status: 'todo',
-    priority: 'medium',
-    createdAt: new Date('2024-11-18').toISOString(),
-    updatedAt: new Date('2024-11-18').toISOString(),
+    id: "t-3",
+    title: "Configure Service Worker",
+    description: "Setup PWA offline capabilities",
+    columnId: "done",
+    tags: ["pwa", "offline"],
+    priority: "high",
+    createdAt: Date.now() - 172800000,
+    subtasks: [],
+    comments: [],
   },
 ];
 
-let boards = [
-  {
-    id: '1',
-    name: 'My Kanban Board',
-    createdAt: new Date('2024-11-01').toISOString(),
-    updatedAt: new Date('2024-11-01').toISOString(),
-  },
+let columns: Column[] = [
+  { id: "todo", title: "To Do", order: 0 },
+  { id: "in-progress", title: "In Progress", order: 1 },
+  { id: "done", title: "Done", order: 2 },
 ];
 
 export const handlers = [
-  // ==========================================================================
-  // Tasks API - Match full URL with localhost:3000
-  // ==========================================================================
+  // === TASKS ===
 
-  // GET /api/tasks - Get all tasks
-  http.get('http://localhost:3000/api/tasks', ({ request }) => {
+  // GET /api/tasks
+  http.get("/api/tasks", async ({ request }) => {
     const url = new URL(request.url);
-    
-    // Simulate error scenarios
-    if (url.searchParams.get('error') === '500') {
-      return HttpResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
+
+    // Simulate errors for testing
+    if (url.searchParams.get("error") === "500") {
+      return HttpResponse.json({ error: "Server error" }, { status: 500 });
     }
-    
-    if (url.searchParams.get('error') === 'timeout') {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(HttpResponse.json({ data: tasks }));
-        }, 5000);
-      });
+    if (url.searchParams.get("slow") === "1") {
+      await delay(2000);
     }
-    
-    // Normal response
-    return HttpResponse.json({ data: tasks });
+
+    return HttpResponse.json(tasks);
   }),
 
-  // GET /api/tasks/:id - Get task by ID
-  http.get('http://localhost:3000/api/tasks/:id', ({ params }) => {
-    const { id } = params;
-    const task = tasks.find((t) => t.id === id);
-    
-    if (!task) {
-      return HttpResponse.json(
-        { error: 'Task not found' },
-        { status: 404 }
-      );
-    }
-    
-    return HttpResponse.json({ data: task });
-  }),
-
-  // POST /api/tasks - Create new task
-  http.post('http://localhost:3000/api/tasks', async ({ request }) => {
-    const body = await request.json() as CreateTaskBody;
-    
-    // Validation
-    if (!body?.title) {
-      return HttpResponse.json(
-        { error: 'Title is required' },
-        { status: 400 }
-      );
-    }
-    
-    const newTask = {
-      id: String(tasks.length + 1),
-      title: body.title,
-      description: body.description || '',
-      status: body.status || 'todo',
-      priority: body.priority || 'medium',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+  // POST /api/tasks
+  http.post("/api/tasks", async ({ request }) => {
+    const newTask = (await request.json()) as Partial<Task>;
+    const task: Task = {
+      id: `t-${Date.now()}`,
+      title: newTask.title || "New Task",
+      description: newTask.description || "",
+      columnId: newTask.columnId || "todo",
+      tags: newTask.tags || [],
+      priority: newTask.priority || "medium",
+      createdAt: Date.now(),
+      subtasks: newTask.subtasks || [],
+      comments: newTask.comments || [],
+      dueDate: newTask.dueDate,
+      diagramCode: newTask.diagramCode,
     };
-    
-    tasks.push(newTask);
-    
-    return HttpResponse.json(
-      { data: newTask },
-      { status: 201 }
-    );
+    tasks.push(task);
+    return HttpResponse.json(task, { status: 201 });
   }),
 
-  // PUT /api/tasks/:id - Update task
-  http.put('http://localhost:3000/api/tasks/:id', async ({ params, request }) => {
+  // PATCH /api/tasks/:id
+  http.patch("/api/tasks/:id", async ({ params, request }) => {
     const { id } = params;
-    const body = await request.json() as UpdateTaskBody;
-    
-    const taskIndex = tasks.findIndex((t) => t.id === id);
-    
-    if (taskIndex === -1) {
-      return HttpResponse.json(
-        { error: 'Task not found' },
-        { status: 404 }
-      );
+    const updates = (await request.json()) as Partial<Task>;
+    const index = tasks.findIndex((t) => t.id === id);
+
+    if (index !== -1) {
+      tasks[index] = { ...tasks[index], ...updates };
+      return HttpResponse.json(tasks[index]);
     }
-    
-    tasks[taskIndex] = {
-      ...tasks[taskIndex],
-      ...body,
-      updatedAt: new Date().toISOString(),
-    };
-    
-    return HttpResponse.json({ data: tasks[taskIndex] });
+    return HttpResponse.json({ error: "Task not found" }, { status: 404 });
   }),
 
-  // DELETE /api/tasks/:id - Delete task
-  http.delete('http://localhost:3000/api/tasks/:id', ({ params }) => {
+  // DELETE /api/tasks/:id
+  http.delete("/api/tasks/:id", ({ params }) => {
     const { id } = params;
-    const taskIndex = tasks.findIndex((t) => t.id === id);
-    
-    if (taskIndex === -1) {
-      return HttpResponse.json(
-        { error: 'Task not found' },
-        { status: 404 }
-      );
-    }
-    
-    tasks.splice(taskIndex, 1);
-    
-    return HttpResponse.json(
-      { success: true },
-      { status: 204 }
-    );
+    tasks = tasks.filter((t) => t.id !== id);
+    return new HttpResponse(null, { status: 204 });
   }),
 
-  // ==========================================================================
-  // Boards API
-  // ==========================================================================
+  // === COLUMNS ===
 
-  // GET /api/boards - Get all boards
-  http.get('http://localhost:3000/api/boards', () => {
-    return HttpResponse.json({ data: boards });
+  // GET /api/columns
+  http.get("/api/columns", () => {
+    return HttpResponse.json(columns);
   }),
 
-  // POST /api/boards - Create new board
-  http.post('http://localhost:3000/api/boards', async ({ request }) => {
-    const body = await request.json() as CreateBoardBody;
-    
-    if (!body?.name) {
-      return HttpResponse.json(
-        { error: 'Name is required' },
-        { status: 400 }
-      );
-    }
-    
-    const newBoard = {
-      id: String(boards.length + 1),
-      name: body.name,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+  // POST /api/columns
+  http.post("/api/columns", async ({ request }) => {
+    const newColumn = (await request.json()) as Partial<Column>;
+    const column: Column = {
+      id: `col-${Date.now()}`,
+      title: newColumn.title || "New Column",
+      order: columns.length,
     };
-    
-    boards.push(newBoard);
-    
-    return HttpResponse.json(
-      { data: newBoard },
-      { status: 201 }
-    );
+    columns.push(column);
+    return HttpResponse.json(column, { status: 201 });
   }),
 
-  // ==========================================================================
-  // Health Check
-  // ==========================================================================
+  // DELETE /api/columns/:id
+  http.delete("/api/columns/:id", ({ params }) => {
+    const { id } = params;
+    columns = columns.filter((c) => c.id !== id);
+    // Also remove tasks in this column
+    tasks = tasks.filter((t) => t.columnId !== id);
+    return new HttpResponse(null, { status: 204 });
+  }),
 
-  http.get('http://localhost:3000/api/health', () => {
-    return HttpResponse.json({
-      status: 'ok',
-      mock: true,
-      timestamp: new Date().toISOString(),
-    });
+  // === SYNC (for offline) ===
+
+  // POST /api/sync
+  http.post("/api/sync", async ({ request }) => {
+    const { pendingTasks } = (await request.json()) as { pendingTasks: Task[] };
+
+    for (const task of pendingTasks) {
+      const existingIndex = tasks.findIndex((t) => t.id === task.id);
+      if (existingIndex !== -1) {
+        tasks[existingIndex] = task;
+      } else {
+        tasks.push(task);
+      }
+    }
+
+    return HttpResponse.json({ synced: pendingTasks.length, tasks });
   }),
 ];
-
-// Reset data (useful for tests)
-export const resetMockData = () => {
-  tasks = [
-    {
-      id: '1',
-      title: 'Setup project structure',
-      description: 'Initialize frontend and backend with proper folder structure',
-      status: 'done',
-      priority: 'high',
-      createdAt: new Date('2024-11-01').toISOString(),
-      updatedAt: new Date('2024-11-01').toISOString(),
-    },
-    {
-      id: '2',
-      title: 'Implement drag and drop',
-      description: 'Add @dnd-kit for smooth task movement between columns',
-      status: 'done',
-      priority: 'high',
-      createdAt: new Date('2024-11-10').toISOString(),
-      updatedAt: new Date('2024-11-15').toISOString(),
-    },
-    {
-      id: '3',
-      title: 'Add offline support',
-      description: 'Implement Service Worker and IndexedDB for offline functionality',
-      status: 'in-progress',
-      priority: 'high',
-      createdAt: new Date('2024-11-15').toISOString(),
-      updatedAt: new Date('2024-11-18').toISOString(),
-    },
-    {
-      id: '4',
-      title: 'Write E2E tests',
-      description: 'Create Playwright tests for critical user flows',
-      status: 'todo',
-      priority: 'medium',
-      createdAt: new Date('2024-11-18').toISOString(),
-      updatedAt: new Date('2024-11-18').toISOString(),
-    },
-  ];
-  
-  boards = [
-    {
-      id: '1',
-      name: 'My Kanban Board',
-      createdAt: new Date('2024-11-01').toISOString(),
-      updatedAt: new Date('2024-11-01').toISOString(),
-    },
-  ];
-};
