@@ -4,21 +4,18 @@
 # ============================================================================
 
 [build]
-  # Build command
-  command = "cd frontend && npm ci && npm run build"
+  # Base directory (where package.json is located)
+  base = "frontend"
   
-  # Publish directory
-  publish = "frontend/dist"
+  # Build command - npm ci installs all deps including devDeps
+  command = "npm ci --include=dev && npm run build"
   
-  # Functions directory (if using Netlify Functions)
-  # functions = "netlify/functions"
+  # Publish directory (relative to base)
+  publish = "dist"
 
 [build.environment]
   # Node version
   NODE_VERSION = "20"
-  
-  # Build environment
-  NODE_ENV = "production"
 
 # ============================================================================
 # Redirects & Rewrites (SPA Routing)
