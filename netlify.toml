@@ -7,21 +7,15 @@
   # Base directory (where package.json is located)
   base = "frontend"
   
-  # Build command (run from base directory)
-  command = "npm ci && npm run build"
+  # Build command - npm ci installs all deps including devDeps
+  command = "npm ci --include=dev && npm run build"
   
   # Publish directory (relative to base)
   publish = "dist"
-  
-  # Functions directory (if using Netlify Functions)
-  # functions = "netlify/functions"
 
 [build.environment]
   # Node version
   NODE_VERSION = "20"
-  
-  # Build environment - set to development so devDependencies are installed
-  NODE_ENV = "development"
 
 # ============================================================================
 # Redirects & Rewrites (SPA Routing)
