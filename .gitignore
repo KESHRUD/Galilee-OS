@@ -53,15 +53,8 @@ Thumbs.db
 frontcopy/
 
 # Generated PDF exports
-*.pdf
-!docs/*.pdf
 .DS_Store
 
 # Docker
 .dockerignore
 docker-compose.override.yml
-
-# Local development documentation
-COPILOT_PROMPT.txt
-PROJECT_PLAN.md
-SETUP_CHECKLIST.md
