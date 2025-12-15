@@ -22,7 +22,7 @@ export default function LoginPage() {
     try {
       await login(username, 'local');
       navigate('/');
-    } catch (err) {
+    } catch {
       setError('Login failed. Please try again.');
     } finally {
       setLoading(false);
