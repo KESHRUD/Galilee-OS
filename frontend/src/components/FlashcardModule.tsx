@@ -11,11 +11,6 @@ import { fetchWikiSummary } from '../services/wikiService';
 import { generateDeckPDF } from '../services/pdfService';
 import { Plus, Brain, ArrowLeft, RotateCw, Sparkles, Loader2, Trash2, BookOpen, Mic, Volume2, Award, Frown, Smile, Search, Globe, Target, Flame, LayoutGrid, Image as FileText } from 'lucide-react';
 
-declare global {
-  interface Window {
-    webkitSpeechRecognition: new () => SpeechRecognition;
-  }
-}
 
 // Curated Unsplash Images for Engineering Topics
 const ENGINEERING_IMAGES = [
@@ -164,7 +159,7 @@ export const FlashcardModule: React.FC = () => {
 
             recognition.onstart = () => setIsListening(true);
             
-            recognition.onresult = (event: Event & { results: SpeechRecognitionResultList }) => {
+            recognition.onresult = (event: SpeechRecognitionEvent) => {
                 const transcript = event.results[0][0].transcript;
                 setSpokenAnswer(transcript);
                 

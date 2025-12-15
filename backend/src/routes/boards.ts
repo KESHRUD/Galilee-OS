@@ -1,7 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { Board } from '../models';
+import { authMiddleware } from '../middleware/auth';
+
+
 
 const router = Router();
+
+// Apply auth middleware to all board routes
+router.use(authMiddleware);
 
 // GET /api/boards - Get all boards
 router.get('/', async (_req: Request, res: Response): Promise<void> => {
