@@ -127,7 +127,7 @@ jobs:
     name: Docker Build
     runs-on: ubuntu-latest
     needs: [frontend-test, backend-test]
-    if: github.event_name == 'push'
+    # Run on push to main/develop or on PRs to main
 
     steps:
       - name: Checkout code
