@@ -26,7 +26,7 @@ test.describe("Kanban Board E2E Tests", () => {
     });
 
     expect(manifest).toBeTruthy();
-    expect(manifest.name).toBe("Offline Kanban Board");
+    expect(manifest.name).toBe("Galilée OS");
   });
 
   test("should register service worker", async ({ page }) => {

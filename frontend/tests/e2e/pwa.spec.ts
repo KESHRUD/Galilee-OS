@@ -19,8 +19,8 @@ test.describe('PWA Features', () => {
     expect(manifestResponse?.status()).toBe(200);
 
     const manifest = await manifestResponse?.json();
-    expect(manifest.name).toBe('Offline Kanban Board');
-    expect(manifest.short_name).toBe('Kanban');
+    expect(manifest.name).toBe('Galilée OS');
+    expect(manifest.short_name).toBe('Galilée');
     expect(manifest.display).toBe('standalone');
     expect(manifest.icons).toHaveLength(2);
   });
