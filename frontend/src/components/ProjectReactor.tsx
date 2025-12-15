@@ -96,11 +96,14 @@ export const ProjectReactor: React.FC<ProjectReactorProps> = ({ tasks }) => {
 
     animate();
 
+    // Copy ref to local variable for cleanup (React best practice)
+    const currentMount = mountRef.current;
+
     // CLEANUP
     return () => {
       cancelAnimationFrame(frameId);
-      if (mountRef.current) {
-        mountRef.current.removeChild(renderer.domElement);
+      if (currentMount) {
+        currentMount.removeChild(renderer.domElement);
       }
       geometryDispose(coreGeometry);
       geometryDispose(ringGeometry);

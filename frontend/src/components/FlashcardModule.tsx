@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import { useAuth } from './AuthContext';
 import { db } from '../services/storage';
 import type { Deck, DailyGoal } from '../types';

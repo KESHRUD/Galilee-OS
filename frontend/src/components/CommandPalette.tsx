@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import { Search, Sun, Moon, VolumeX, Plus } from 'lucide-react';
 import { audioManager } from '../services/audioService';
 

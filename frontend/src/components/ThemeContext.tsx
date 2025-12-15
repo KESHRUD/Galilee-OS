@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import type { ThemeMode, Language } from '../types';
 import { getTranslation } from '../utils/translations';
 
@@ -11,7 +11,8 @@ interface ThemeContextType {
   t: (key: string) => string;
 }
 
-const ThemeContext = createContext<ThemeContextType>({ 
+// Export context for useTheme hook (in hooks/useTheme.ts)
+export const ThemeContext = createContext<ThemeContextType>({ 
   theme: 'galilee', 
   toggleTheme: () => {}, 
   language: 'fr',
@@ -39,5 +40,3 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </ThemeContext.Provider>
   );
 };
-
-export const useTheme = () => useContext(ThemeContext);

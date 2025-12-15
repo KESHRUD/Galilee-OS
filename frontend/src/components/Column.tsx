@@ -2,7 +2,7 @@
 import React from 'react';
 import type { Column as ColumnType, Task } from '../types';
 import { TaskCard } from './TaskCard';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import { Plus, GripVertical, Trash2 } from 'lucide-react';
 
 interface ColumnProps {

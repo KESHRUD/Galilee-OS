@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import { Logo } from './Logo';
 import { Background3D } from './Background3D';
 import { ArrowRight, Cpu, Brain, Zap } from 'lucide-react';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from './AuthContext';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import { Trophy, Shield } from 'lucide-react';
 
 export const GamificationHUD: React.FC = () => {

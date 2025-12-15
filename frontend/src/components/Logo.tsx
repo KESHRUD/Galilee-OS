@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import {  ArrowRight, ArrowLeft, Cpu, Zap, Radio, Microscope, Activity, GraduationCap } from 'lucide-react';
 import { Logo } from './Logo';
 import type { Speciality } from '../types';

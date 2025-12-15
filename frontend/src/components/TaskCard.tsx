@@ -1,7 +1,7 @@
 
 import React from 'react';
 import type { Task, Priority } from '../types';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import { Trash2, Edit2, Clock, Cpu, CheckSquare, MessageSquare } from 'lucide-react';
 
 interface TaskCardProps {

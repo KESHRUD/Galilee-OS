@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { Task, Priority, Subtask, Comment } from '../types';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 
 import { X, Loader2, Bot, Plus, Calendar, CheckCircle, Circle } from 'lucide-react';
 import { enhanceTaskDescription } from '../services/geminiService';

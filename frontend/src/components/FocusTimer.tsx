@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from './ThemeContext';
+import { useTheme } from '../hooks/useTheme';
 import { Play, Pause, RotateCcw, Zap, Waves } from 'lucide-react';
 import { audioManager } from '../services/audioService';
 

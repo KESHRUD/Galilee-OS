@@ -90,8 +90,8 @@ export const generateDeckPDF = (deck: Deck, user: User | null) => {
     doc.setFontSize(11);
     doc.setTextColor(secondaryColor);
     
-    // Sanitize text to avoid PDF errors with unsupported chars
-    const safeQuestion = card.question.replace(/[^\x00-\xFF]/g, " "); 
+    // Sanitize text to avoid PDF errors with unsupported chars (keep only Latin-1)
+    const safeQuestion = card.question.replace(/[^\u0000-\u00FF]/g, " "); 
     doc.text(`Q${index + 1}: ${safeQuestion}`, 25, y + 10);
     
     y += 20;
@@ -102,7 +102,7 @@ export const generateDeckPDF = (deck: Deck, user: User | null) => {
     doc.setTextColor('#333333');
     
     // Wrap text
-    const safeAnswer = card.answer.replace(/[^\x00-\xFF]/g, " ");
+    const safeAnswer = card.answer.replace(/[^\u0000-\u00FF]/g, " ");
     const splitAnswer = doc.splitTextToSize(safeAnswer, 160);
     doc.text(splitAnswer, 25, y);
     
