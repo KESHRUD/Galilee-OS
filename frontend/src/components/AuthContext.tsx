@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User, AuthContextType, Speciality } from '../types';
 import { authService } from '../services/auth';
-import { audioManager } from '../services/audioService';
+// audioManager removed - import when needed
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

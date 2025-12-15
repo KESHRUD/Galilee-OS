@@ -51,7 +51,7 @@ describe('Auth Routes', () => {
         save: vi.fn().mockResolvedValue(true),
       };
 
-      vi.spyOn(User.prototype, 'save').mockResolvedValueOnce(mockUser as any);
+      vi.spyOn(User.prototype, 'save').mockResolvedValueOnce(mockUser as unknown);
 
       const response = await request(app)
         .post('/api/auth/register')
@@ -72,7 +72,7 @@ describe('Auth Routes', () => {
       vi.mocked(User.findOne).mockResolvedValueOnce({
         _id: '123',
         email: 'existing@example.com',
-      } as any);
+      } as unknown);
 
       const response = await request(app)
         .post('/api/auth/register')
@@ -136,7 +136,7 @@ describe('Auth Routes', () => {
         save: vi.fn().mockResolvedValue(true),
       };
 
-      vi.spyOn(User.prototype, 'save').mockResolvedValueOnce(mockUser as any);
+      vi.spyOn(User.prototype, 'save').mockResolvedValueOnce(mockUser as unknown);
 
       const response = await request(app)
         .post('/api/auth/register')
@@ -162,7 +162,7 @@ describe('Auth Routes', () => {
         email: 'user@example.com',
         name: 'Test User',
         password: hashedPassword,
-      } as any);
+      } as unknown);
 
       const response = await request(app)
         .post('/api/auth/login')
@@ -198,7 +198,7 @@ describe('Auth Routes', () => {
         _id: '123',
         email: 'user@example.com',
         password: hashedPassword,
-      } as any);
+      } as unknown);
 
       const response = await request(app)
         .post('/api/auth/login')
@@ -241,7 +241,7 @@ describe('Auth Routes', () => {
         _id: '123',
         email: 'user@example.com',
         password: hashedPassword,
-      } as any);
+      } as unknown);
 
       const response2 = await request(app)
         .post('/api/auth/login')
@@ -281,7 +281,7 @@ describe('Auth Routes', () => {
           email: 'test@example.com',
           name: 'Test User',
         }),
-      } as any);
+      } as unknown);
 
       const response = await request(app)
         .get('/api/auth/me')
@@ -320,7 +320,7 @@ describe('Auth Routes', () => {
         save: vi.fn().mockResolvedValue(true),
       };
 
-      vi.spyOn(User.prototype, 'save').mockResolvedValueOnce(mockUser as any);
+      vi.spyOn(User.prototype, 'save').mockResolvedValueOnce(mockUser as unknown);
 
       const response = await request(app)
         .post('/api/auth/register')
@@ -344,7 +344,7 @@ describe('Auth Routes', () => {
         save: vi.fn().mockResolvedValue(true),
       };
 
-      vi.spyOn(User.prototype, 'save').mockResolvedValueOnce(mockUser as any);
+      vi.spyOn(User.prototype, 'save').mockResolvedValueOnce(mockUser as unknown);
 
       const response = await request(app)
         .post('/api/auth/register')

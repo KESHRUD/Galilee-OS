@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useTheme } from './ThemeContext';
-import { User, Lock, ArrowRight, Terminal, ArrowLeft, Mail, Cpu, Zap, Radio, Microscope, Activity, GraduationCap } from 'lucide-react';
+import {  ArrowRight, ArrowLeft, Cpu, Zap, Radio, Microscope, Activity, GraduationCap } from 'lucide-react';
 import { Logo } from './Logo';
 import type { Speciality } from '../types';
 
@@ -10,7 +10,7 @@ interface LoginProps {
     onBack?: () => void;
 }
 
-const SPECIALITIES: { id: Speciality; icon: any; labelKey: string; color: string }[] = [
+const SPECIALITIES: { id: Speciality; icon: React.ComponentType<{ size?: number; className?: string }>; labelKey: string; color: string }[] = [
     { id: 'info', icon: Cpu, labelKey: 'spec_info', color: 'text-blue-400' },
     { id: 'energy', icon: Zap, labelKey: 'spec_energy', color: 'text-yellow-400' },
     { id: 'telecom', icon: Radio, labelKey: 'spec_telecom', color: 'text-purple-400' },

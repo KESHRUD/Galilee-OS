@@ -1,4 +1,4 @@
-import type { Task, Column, Deck, DailyGoal, User } from '../types';
+import type { Task, Column, Deck, DailyGoal } from '../types';
 
 const DB_NAME = 'GalileeOS_DB';
 const DB_VERSION = 5; 
@@ -119,7 +119,7 @@ export class StorageService {
         const request = store.getAll();
         request.onsuccess = () => resolve(request.result || []);
         request.onerror = () => reject(request.error);
-      } catch (e) {
+      } catch {
         resolve([]); // Store might not exist yet on upgrade
       }
     });
@@ -151,7 +151,7 @@ export class StorageService {
 
   async getDailyGoal(): Promise<DailyGoal> {
     const db = await this.dbPromise;
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
         const transaction = db.transaction(STORE_GOALS, 'readonly');
         const store = transaction.objectStore(STORE_GOALS);
@@ -162,7 +162,7 @@ export class StorageService {
           const result = request.result as DailyGoal;
           
           if (!result) {
-            resolve({ id: 'daily_goal', target: 20, progress: 0, lastUpdated: today, streak: 0 } as any);
+            resolve({ id: 'daily_goal', target: 20, progress: 0, lastUpdated: today, streak: 0 } as DailyGoal);
           } else if (result.lastUpdated < today) {
             const oneDay = 24 * 60 * 60 * 1000;
             const isConsecutive = (today - result.lastUpdated) <= oneDay;
@@ -173,7 +173,7 @@ export class StorageService {
           }
         };
         request.onerror = () => reject(request.error);
-      } catch(e) {
+      } catch {
          resolve({ target: 20, progress: 0, lastUpdated: Date.now(), streak: 0 });
       }
     });

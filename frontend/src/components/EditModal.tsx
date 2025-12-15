@@ -2,13 +2,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Task, Priority, Subtask, Comment } from '../types';
 import { useTheme } from './ThemeContext';
-import { useAuth } from './AuthContext';
-import { X, Loader2, Bot, Plus, Calendar, CheckCircle, Circle, Send, FileCode, Edit3, Image } from 'lucide-react';
+
+import { X, Loader2, Bot, Plus, Calendar, CheckCircle, Circle, FileCode, Edit3, Image } from 'lucide-react';
 import { enhanceTaskDescription, generateDiagramCode } from '../services/geminiService';
 
 declare global {
   interface Window {
-    mermaid: any;
+    mermaid: unknown;
   }
 }
 
@@ -22,7 +22,6 @@ interface EditModalProps {
 
 export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, initialTask, columnId }) => {
   const { theme, t } = useTheme();
-  const { user } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'config' | 'blueprint'>('config');
 
@@ -73,7 +72,7 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, i
           try {
               mermaidRef.current.innerHTML = `<div class="mermaid">${diagramCode}</div>`;
               window.mermaid.run({ nodes: [mermaidRef.current.querySelector('.mermaid')] });
-          } catch(e) {
+          } catch {
               console.error("Mermaid Render Error", e);
               mermaidRef.current.innerHTML = "Diagram Syntax Error";
           }
@@ -100,7 +99,7 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, i
             setSubtasks(prev => [...prev, ...addedSubtasks]);
         }
 
-    } catch (e) {
+    } catch {
         alert("Échec de l'amélioration IA. Vérifiez la clé API.");
     } finally {
         setIsEnhancing(false);
@@ -113,7 +112,7 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, i
       try {
           const code = await generateDiagramCode(description);
           setDiagramCode(code);
-      } catch (e) {
+      } catch {
           alert("Error generating diagram");
       } finally {
           setIsGeneratingDiagram(false);

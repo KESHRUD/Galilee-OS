@@ -14,7 +14,7 @@ class AudioService {
 
   private init() {
     if (!this.ctx) {
-      this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       this.masterGain = this.ctx.createGain();
       this.masterGain.connect(this.ctx.destination);
       this.masterGain.gain.value = 0.3; // Default volume
@@ -180,7 +180,7 @@ export const calculateSimilarity = (s1: string, s2: string): number => {
     str1 = str1.toLowerCase().replace(/[^a-z0-9]/g, '');
     str2 = str2.toLowerCase().replace(/[^a-z0-9]/g, '');
     
-    const costs = new Array();
+    const costs = [];
     for (let i = 0; i <= str1.length; i++) {
       let lastValue = i;
       for (let j = 0; j <= str2.length; j++) {

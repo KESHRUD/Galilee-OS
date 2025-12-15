@@ -3,7 +3,7 @@ import type { Deck, User } from '../types';
 
 declare global {
   interface Window {
-    jspdf: any;
+    jspdf: { jsPDF: new () => unknown } | undefined;
   }
 }
 

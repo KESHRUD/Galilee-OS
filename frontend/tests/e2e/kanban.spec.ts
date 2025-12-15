@@ -31,7 +31,7 @@ test.describe("Kanban Board E2E Tests", () => {
 
   test("should register service worker", async ({ page }) => {
     // Wait for service worker registration
-    const swRegistered = await page.evaluate(async () => {
+    const _swRegistered = await page.evaluate(async () => {
       if (!("serviceWorker" in navigator)) return false;
       try {
         const registration = await navigator.serviceWorker.getRegistration();

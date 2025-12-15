@@ -12,7 +12,7 @@ export const FocusTimer: React.FC = () => {
     const [noiseEnabled, setNoiseEnabled] = useState(false);
 
     useEffect(() => {
-        let interval: any;
+        let interval: ReturnType<typeof setInterval> | undefined;
         if (isActive && timeLeft > 0) {
             interval = setInterval(() => setTimeLeft(t => t - 1), 1000);
         } else if (timeLeft === 0) {

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 const router = Router();
 
 // In-memory storage
-let columns: Column[] = [
+const columns: Column[] = [
   { id: "todo", title: "To Do", order: 0 },
   { id: "in-progress", title: "In Progress", order: 1 },
   { id: "done", title: "Done", order: 2 },

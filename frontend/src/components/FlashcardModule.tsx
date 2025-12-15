@@ -1,19 +1,19 @@
 
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from './ThemeContext';
 import { useAuth } from './AuthContext';
 import { db } from '../services/storage';
-import type { Deck, Flashcard, DailyGoal } from '../types';
+import type { Deck, DailyGoal } from '../types';
 import { generateFlashcards } from '../services/geminiService';
 import { audioManager, calculateSimilarity } from '../services/audioService';
 import { fetchWikiSummary } from '../services/wikiService';
 import { generateDeckPDF } from '../services/pdfService';
-import { Plus, Brain, ArrowLeft, RotateCw, Sparkles, Loader2, Trash2, BookOpen, Mic, Volume2, Award, Frown, Smile, Search, Globe, Target, Flame, Check, LayoutGrid, Image as ImageIcon, FileText } from 'lucide-react';
+import { Plus, Brain, ArrowLeft, RotateCw, Sparkles, Loader2, Trash2, BookOpen, Mic, Volume2, Award, Frown, Smile, Search, Globe, Target, Flame, LayoutGrid, Image as FileText } from 'lucide-react';
 
 declare global {
   interface Window {
-    webkitSpeechRecognition: any;
+    webkitSpeechRecognition: typeof SpeechRecognition;
   }
 }
 
@@ -128,7 +128,7 @@ export const FlashcardModule: React.FC = () => {
                     streak: 0
                 }));
                 playSound('success');
-            } catch (e) {
+            } catch {
                 alert("Erreur IA");
             } finally {
                 setLoadingAI(false);
@@ -164,7 +164,7 @@ export const FlashcardModule: React.FC = () => {
 
             recognition.onstart = () => setIsListening(true);
             
-            recognition.onresult = (event: any) => {
+            recognition.onresult = (event: SpeechRecognitionEvent) => {
                 const transcript = event.results[0][0].transcript;
                 setSpokenAnswer(transcript);
                 
@@ -207,7 +207,7 @@ export const FlashcardModule: React.FC = () => {
     };
 
     // SRS Logic (Simplified SM-2)
-    const handleGrade = async (grade: 'fail' | 'hard' | 'good' | 'easy') => {
+    const handleGrade = async (_grade: 'fail' | 'hard' | 'good' | 'easy') => {
         playSound('click');
         if (!activeDeck) return;
         
@@ -525,7 +525,7 @@ export const FlashcardModule: React.FC = () => {
     );
 };
 
-const SRSButton = ({ label, color, icon, onClick, theme }: any) => {
+const SRSButton = ({ label, color, icon, onClick, theme }: { label: string; color: string; icon: React.ReactNode; onClick: () => void; theme: string }) => {
     const isGalilee = theme === 'galilee';
     const colorClasses = {
         red: isGalilee ? 'bg-red-900/30 text-red-400 border-red-800 hover:bg-red-800' : 'bg-red-100 text-red-600 hover:bg-red-200',
