@@ -1,10 +1,7 @@
-
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { User, AuthContextType, Speciality } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { User, Speciality } from '../types';
 import { authService } from '../services/auth';
-// audioManager removed - import when needed
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext } from '../contexts/AuthContext';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -50,12 +47,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {!loading && children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

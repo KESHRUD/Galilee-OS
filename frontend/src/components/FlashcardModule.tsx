@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../hooks/useTheme';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { db } from '../services/storage';
 import type { Deck, DailyGoal } from '../types';
 import { generateFlashcards } from '../services/geminiService';

@@ -1,24 +1,7 @@
-
-import React, { createContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ThemeMode, Language } from '../types';
 import { getTranslation } from '../utils/translations';
-
-interface ThemeContextType {
-  theme: ThemeMode;
-  toggleTheme: () => void;
-  language: Language;
-  setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
-}
-
-// Export context for useTheme hook (in hooks/useTheme.ts)
-export const ThemeContext = createContext<ThemeContextType>({ 
-  theme: 'galilee', 
-  toggleTheme: () => {}, 
-  language: 'fr',
-  setLanguage: () => {},
-  t: (key) => key 
-});
+import { ThemeContext } from '../contexts/ThemeContext';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<ThemeMode>('galilee');
