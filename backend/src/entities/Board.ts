@@ -3,10 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
+  OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
 } from "typeorm";
 import { User } from "./User";
+import { ColumnEntity } from "./Column";
 
 @Entity("boards")
 export class Board {
@@ -16,9 +18,12 @@ export class Board {
   @Column()
   title!: string;
 
-  // ✅ relation vers User (sans dépendre d'une propriété inverse qui n'existe pas encore)
   @ManyToOne(() => User, { onDelete: "CASCADE" })
   owner!: User;
+
+  //1 board -> N columns (maintenant que ColumnEntity existe)
+  @OneToMany(() => ColumnEntity, (col) => col.board)
+  columns?: ColumnEntity[];
 
   @CreateDateColumn()
   createdAt!: Date;
