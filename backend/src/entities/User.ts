@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
 } from "typeorm";
+import { UserProfile } from "./UserProfile";
 
 export type UserRole = "admin" | "student";
 
@@ -22,9 +24,14 @@ export class User {
   @Column({ type: "varchar", default: "student" })
   role!: UserRole;
 
+  // ✅ 1:1 (ajouté maintenant pour satisfaire UserProfile)
+  @OneToOne(() => UserProfile, (profile) => profile.user)
+  profile?: UserProfile;
+
   @CreateDateColumn()
   createdAt!: Date;
 
   @UpdateDateColumn()
   updatedAt!: Date;
 }
+
