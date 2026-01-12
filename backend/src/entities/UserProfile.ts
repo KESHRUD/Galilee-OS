@@ -14,10 +14,10 @@ export class UserProfile {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column({ default: 0 })
+    @Column({ type: "int", default: 0 })
   xp!: number;
 
-  @Column({ default: 1 })
+  @Column({ type: "int", default: 1 })
   level!: number;
 
   @OneToOne(() => User, (user) => user.profile, { onDelete: "CASCADE" })

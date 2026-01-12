@@ -2,6 +2,15 @@ import "reflect-metadata";
 import "dotenv/config";
 import { DataSource } from "typeorm";
 
+import { User } from "../entities/User";
+import { UserProfile } from "../entities/UserProfile";
+import { Board } from "../entities/Board";
+import { ColumnEntity } from "../entities/Column";
+import { Task } from "../entities/Task";
+import { Tag } from "../entities/Tag";
+import { BoardMember } from "../entities/BoardMember";
+import { TaskTag } from "../entities/TaskTag";
+
 export const AppDataSource = new DataSource({
   type: "postgres",
   host: process.env.DB_HOST || "localhost",
@@ -10,12 +19,10 @@ export const AppDataSource = new DataSource({
   password: process.env.DB_PASSWORD || "galilee_password",
   database: process.env.DB_NAME || "galilee_os",
 
-  //on garde false, les tables seront gérées par migrations
+  //On utilise les migrations (pas synchronize)
   synchronize: false,
   logging: false,
 
-
-  entities: ["src/entities/**/*.ts"],
+  entities: [User, UserProfile, Board, ColumnEntity, Task, Tag, BoardMember, TaskTag],
   migrations: ["src/migrations/**/*.ts"],
 });
-

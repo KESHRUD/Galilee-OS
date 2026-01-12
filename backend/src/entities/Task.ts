@@ -13,17 +13,20 @@ export class Task {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   title!: string;
 
   @Column({ type: "text", nullable: true })
   description?: string;
 
-  @Column({ default: false })
+
+  @Column({ type: "boolean", default: false })
   completed!: boolean;
 
   @Column({ type: "int", default: 0 })
   position!: number;
+
+
 
   /**
    * ONE-TO-MANY (côté ManyToOne ici)

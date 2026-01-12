@@ -15,8 +15,9 @@ export class Board {
   @PrimaryGeneratedColumn("uuid")
   id!: string;
 
-  @Column()
+  @Column({ type: "varchar" })
   title!: string;
+
 
   @ManyToOne(() => User, { onDelete: "CASCADE" })
   owner!: User;

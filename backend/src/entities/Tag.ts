@@ -14,8 +14,9 @@ export class Tag {
   /**
    * Nom unique du tag (ex: bug, urgent, backend)
    */
-  @Column({ unique: true })
+  @Column({ type: "varchar", unique: true })
   name!: string;
+
 
   @CreateDateColumn()
   createdAt!: Date;
