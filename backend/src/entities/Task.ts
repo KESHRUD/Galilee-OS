@@ -22,9 +22,19 @@ export class Task {
   @Column({ default: false })
   completed!: boolean;
 
-  //N tasks -> 1 column
-  @ManyToOne(() => ColumnEntity, (column) => column.tasks, { onDelete: "CASCADE", nullable: true })
-  column?: ColumnEntity;
+  @Column({ type: "int", default: 0 })
+  position!: number;
+
+  /**
+   * ONE-TO-MANY (côté ManyToOne ici)
+   * - Une colonne contient plusieurs tâches
+   * - Une tâche appartient à une colonne
+   */
+  @ManyToOne(() => ColumnEntity, (column) => column.tasks, {
+    onDelete: "CASCADE",
+    nullable: false,
+  })
+  column!: ColumnEntity;
 
   @CreateDateColumn()
   createdAt!: Date;
