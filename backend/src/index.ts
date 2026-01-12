@@ -2,6 +2,7 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+
 import { errorHandler } from './middleware/errorHandler';
 import tasksRouter from './routes/tasks';
 import boardsRouter from './routes/boards';
@@ -12,16 +13,24 @@ dotenv.config();
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-// Middleware
+/* ============================================================================
+ * Middleware
+ * ============================================================================
+ */
 app.use(helmet());
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-//routes
+/* ============================================================================
+ * Routes
+ * ============================================================================
+ */
 app.get('/api/health', async (_, res) => {
   res.json({
     status: 'ok',
@@ -30,33 +39,64 @@ app.get('/api/health', async (_, res) => {
   });
 });
 
-
 app.use('/api/tasks', tasksRouter);
 app.use('/api/boards', boardsRouter);
 
-// Error handling (must be last)
+/* ============================================================================
+ * Error handling 
+ * ============================================================================
+ */
 app.use(errorHandler);
 
-//Démarrage du serveur après initialisation DB
-//On init TypeORM au démarrage
-//Si la DB est KO : on log + exit (pour éviter un backend "à moitié vivant")
+/* ============================================================================
+ * Server & Database bootstrap
+ * ============================================================================
+ */
 async function startServer() {
   try {
     await AppDataSource.initialize();
     console.log('✅ Database connected successfully');
   } catch (err) {
+    /**
+     * ✅ FIX CRITIQUE CI / TESTS
+     * En tests (Vitest / CI), on NE DOIT JAMAIS :
+     * - tenter une vraie connexion DB
+     * - ni appeler process.exit()
+     */
+    if (
+      process.env.NODE_ENV === 'test' ||
+      process.env.START_SERVER === 'false'
+    ) {
+      console.warn(
+        '⚠️ Database not initialized (test mode / START_SERVER=false). Continuing without DB.'
+      );
+      return;
+    }
+
     console.error('❌ Database connection failed', err);
     process.exit(1);
   }
 
-  if (process.env.START_SERVER !== 'false') {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📋 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
-  }
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📋 Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
 }
-//lancement centralise
-startServer();
+
+/**
+ * ============================================================================
+ * (CI / VITEST)
+ * ============================================================================
+ * - En test : on exporte seulement l'app (Supertest)
+ * - En dev/prod : on démarre DB + serveur
+ */
+const shouldStartServer =
+  process.env.START_SERVER !== 'false' &&
+  process.env.NODE_ENV !== 'test';
+
+if (shouldStartServer) {
+  startServer();
+}
 
 export default app;
+

@@ -7,7 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "rm -rf dist && vitest run",
+    "test": "rm -rf dist && NODE_ENV=test START_SERVER=false vitest run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "lint": "eslint . --ext .ts",
