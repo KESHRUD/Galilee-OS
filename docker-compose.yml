@@ -15,10 +15,18 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    
+    depends_on:
+      - postgres
     environment:
       - NODE_ENV=production
       - PORT=3000
       - CORS_ORIGIN=http://localhost
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=galilee_admin
+      - DB_PASSWORD=galilee_password
+      - DB_NAME=galilee_os
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -51,6 +59,31 @@ services:
     networks:
       - kanban-network
 
+  # ==========================================================================
+  # Database Service - PostgreSQL
+  # ==========================================================================
+  postgres:
+    image: postgres:15
+    container_name: kanban-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=galilee_admin
+      - POSTGRES_PASSWORD=galilee_password
+      - POSTGRES_DB=galilee_os
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U galilee_admin -d galilee_os"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - kanban-network
+
 # ============================================================================
 # Networks
 # ============================================================================
@@ -65,3 +98,8 @@ networks:
 volumes:
   kanban-data:
     name: kanban-data
+  # ============================
+  # volume PostgreSQL
+  # ============================
+  postgres_data:
+    name: postgres_data
