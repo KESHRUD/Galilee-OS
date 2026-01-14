@@ -64,8 +64,8 @@ router.get("/:id", (req: Request, res: Response): void => {
   res.json({ data: task });
 });
 
-// POST /api/tasks - Create new task (still in-memory for now)
-router.post("/", (req: Request, res: Response): void => {
+// POST /api/tasks - Create new task (DB if available, fallback to in-memory during tests)
+router.post("/", async (req: Request, res: Response): Promise<void> => {
   const dto: CreateTaskDTO = req.body;
 
   if (!dto.title) {
@@ -73,19 +73,48 @@ router.post("/", (req: Request, res: Response): void => {
     return;
   }
 
-  const newTask: Task = {
-    id: uuidv4(),
-    title: dto.title,
-    description: dto.description,
-    status: dto.status || "todo",
-    priority: dto.priority,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  try {
+    //Fallback if DB not initialized (tests)
+    if (!AppDataSource.isInitialized) {
+      const newTask: Task = {
+        id: uuidv4(),
+        title: dto.title,
+        description: dto.description,
+        status: dto.status || "todo",
+        priority: dto.priority,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-  tasks.push(newTask);
+      tasks.push(newTask);
+      res.status(201).json({ data: newTask });
+      return;
+    }
 
-  res.status(201).json({ data: newTask });
+    const taskRepo = AppDataSource.getRepository(TaskEntity);
+
+    //TaskEntity needs a Column (ManyToOne, nullable false)
+    //For now, we allow creating a task only if columnId is provided
+    const { columnId } = dto as unknown as { columnId?: string };
+    if (!columnId) {
+      res.status(400).json({ error: "columnId is required" });
+      return;
+    }
+
+    const created = taskRepo.create({
+      title: dto.title,
+      description: dto.description,
+      completed: false,
+      position: 0,
+      column: { id: columnId } as any,
+    });
+
+    const saved = await taskRepo.save(created);
+
+    res.status(201).json({ data: saved });
+  } catch {
+    res.status(500).json({ error: "Failed to create task" });
+  }
 });
 
 // PUT /api/tasks/:id - Update task (still in-memory for now)
