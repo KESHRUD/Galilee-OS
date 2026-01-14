@@ -117,38 +117,87 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// PUT /api/tasks/:id - Update task (still in-memory for now)
-router.put("/:id", (req: Request, res: Response): void => {
-  const taskIndex = tasks.findIndex((t) => t.id === req.params.id);
-
-  if (taskIndex === -1) {
-    res.status(404).json({ error: "Task not found" });
-    return;
-  }
-
+// PUT /api/tasks/:id - Update task (DB if available, fallback to in-memory during tests)
+router.put("/:id", async (req: Request, res: Response): Promise<void> => {
   const dto: UpdateTaskDTO = req.body;
 
-  tasks[taskIndex] = {
-    ...tasks[taskIndex],
-    ...dto,
-    updatedAt: new Date().toISOString(),
-  };
+  try {
+    // Fallback if DB not initialized (tests)
+    if (!AppDataSource.isInitialized) {
+      const taskIndex = tasks.findIndex((t) => t.id === req.params.id);
 
-  res.json({ data: tasks[taskIndex] });
-});
+      if (taskIndex === -1) {
+        res.status(404).json({ error: "Task not found" });
+        return;
+      }
 
-// DELETE /api/tasks/:id - Delete task (still in-memory for now)
-router.delete("/:id", (req: Request, res: Response): void => {
-  const taskIndex = tasks.findIndex((t) => t.id === req.params.id);
+      tasks[taskIndex] = {
+        ...tasks[taskIndex],
+        ...dto,
+        updatedAt: new Date().toISOString(),
+      };
 
-  if (taskIndex === -1) {
-    res.status(404).json({ error: "Task not found" });
-    return;
+      res.json({ data: tasks[taskIndex] });
+      return;
+    }
+
+    const taskRepo = AppDataSource.getRepository(TaskEntity);
+
+    const task = await taskRepo.findOne({
+      where: { id: req.params.id },
+    });
+
+    if (!task) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+
+    // Update allowed fields
+    if (typeof (dto as any).title === "string") task.title = (dto as any).title;
+    if (typeof (dto as any).description === "string") task.description = (dto as any).description;
+    if (typeof (dto as any).completed === "boolean") task.completed = (dto as any).completed;
+    if (typeof (dto as any).position === "number") task.position = (dto as any).position;
+
+    const saved = await taskRepo.save(task);
+
+    res.json({ data: saved });
+  } catch {
+    res.status(500).json({ error: "Failed to update task" });
   }
-
-  tasks.splice(taskIndex, 1);
-
-  res.status(204).send();
 });
+
+
+// DELETE /api/tasks/:id - Delete task (DB if available, fallback to in-memory during tests)
+router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Fallback if DB not initialized (tests)
+    if (!AppDataSource.isInitialized) {
+      const taskIndex = tasks.findIndex((t) => t.id === req.params.id);
+
+      if (taskIndex === -1) {
+        res.status(404).json({ error: "Task not found" });
+        return;
+      }
+
+      tasks.splice(taskIndex, 1);
+      res.status(204).send();
+      return;
+    }
+
+    const taskRepo = AppDataSource.getRepository(TaskEntity);
+
+    const result = await taskRepo.delete({ id: req.params.id });
+
+    if (!result.affected) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+
+    res.status(204).send();
+  } catch {
+    res.status(500).json({ error: "Failed to delete task" });
+  }
+});
+
 
 export default router;
