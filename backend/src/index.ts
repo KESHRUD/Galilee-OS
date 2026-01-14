@@ -7,6 +7,8 @@ import { errorHandler } from './middleware/errorHandler';
 import tasksRouter from './routes/tasks';
 import boardsRouter from './routes/boards';
 import { AppDataSource } from './config/data-source';
+import authRouter from "./routes/auth";
+
 
 dotenv.config();
 
@@ -41,6 +43,8 @@ app.get('/api/health', async (_, res) => {
 
 app.use('/api/tasks', tasksRouter);
 app.use('/api/boards', boardsRouter);
+app.use("/api/auth", authRouter);
+
 
 /* ============================================================================
  * Error handling 
