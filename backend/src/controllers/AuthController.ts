@@ -44,7 +44,7 @@ export class AuthController {
           profile: user.profile ?? null,
         },
       });
-    } catch (e) {
+    } catch {
       return res.status(500).json({ message: "Internal server error" });
     }
   }
