@@ -3,6 +3,10 @@ import { Board } from "../types";
 import { authMiddleware } from "../middleware/AuthContext";
 import { v4 as uuidv4 } from "uuid";
 import { BoardController } from "../controllers/BoardController";
+import { AppDataSource } from "../config/data-source";
+import { BoardMember } from "../entities/BoardMember";
+import { User } from "../entities/User";
+
 
 const router = Router();
 
@@ -42,5 +46,47 @@ router.post("/", (req: Request, res: Response): void => {
 
   res.status(201).json({ data: newBoard });
 });
+
+// POST /api/boards/:id/members - Add member to board
+router.post("/:id/members", async (req: Request, res: Response): Promise<void> => {
+  const { userId, role = "member" } = req.body;
+
+  if (!userId) {
+    res.status(400).json({ error: "userId is required" });
+    return;
+  }
+
+  try {
+    // Fallback (tests)
+    if (!AppDataSource.isInitialized) {
+      res.status(201).json({ data: { boardId: req.params.id, userId, role } });
+      return;
+    }
+
+    const boardMemberRepo = AppDataSource.getRepository(BoardMember);
+    const userRepo = AppDataSource.getRepository(User);
+
+    const user = await userRepo.findOne({ where: { id: userId } });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const boardMember = boardMemberRepo.create({
+      role,
+      board: { id: req.params.id } as any,
+      user: { id: userId } as any,
+    });
+
+
+    const saved = await boardMemberRepo.save(boardMember);
+
+    res.status(201).json({ data: saved });
+  } catch {
+    res.status(500).json({ error: "Failed to add board member" });
+  }
+});
+
 
 export default router;

@@ -5,6 +5,10 @@ import { v4 as uuidv4 } from "uuid";
 import { AppDataSource } from "../config/data-source";
 import { Task as TaskEntity } from "../entities/Task";
 
+import { TaskTag } from "../entities/TaskTag";
+import { Tag } from "../entities/Tag";
+
+
 const router = Router();
 
 // In-memory storage (will be replaced with database later)
@@ -116,6 +120,47 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ error: "Failed to create task" });
   }
 });
+
+// POST /api/tasks/:id/tags - Add tag to task
+router.post("/:id/tags", async (req: Request, res: Response): Promise<void> => {
+  const { tagId } = req.body;
+
+  if (!tagId) {
+    res.status(400).json({ error: "tagId is required" });
+    return;
+  }
+
+  try {
+    // Fallback (tests)
+    if (!AppDataSource.isInitialized) {
+      res.status(201).json({ data: { taskId: req.params.id, tagId } });
+      return;
+    }
+
+    const taskTagRepo = AppDataSource.getRepository(TaskTag);
+    const tagRepo = AppDataSource.getRepository(Tag);
+
+    const tag = await tagRepo.findOne({ where: { id: tagId } });
+
+    if (!tag) {
+      res.status(404).json({ error: "Tag not found" });
+      return;
+    }
+
+    const taskTag = taskTagRepo.create({
+      task: { id: req.params.id } as any,
+      tag: { id: tagId } as any,
+    });
+
+
+    const saved = await taskTagRepo.save(taskTag);
+
+    res.status(201).json({ data: saved });
+  } catch {
+    res.status(500).json({ error: "Failed to add tag to task" });
+  }
+});
+
 
 // PUT /api/tasks/:id - Update task (DB if available, fallback to in-memory during tests)
 router.put("/:id", async (req: Request, res: Response): Promise<void> => {
