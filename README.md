@@ -24,6 +24,10 @@ Progressive Web Application complète pour la gestion de projets, révisions IA 
 Université Sorbonne Paris Nord - Sup Galilée  
 [@KESHRUD](https://github.com/KESHRUD)
 
+**KAFIZ Sarah**
+Étudiante Ingénieure en Informatique - ING2
+Université Sorbonne Paris Nord - Sup Galilée  
+
 ---
 
 ## 📋 Table des Matières
@@ -38,6 +42,7 @@ Université Sorbonne Paris Nord - Sup Galilée
 - [Tests & Qualité](#-tests--qualité)
 - [Déploiement](#-déploiement)
 - [Conformité PWA](#-conformité-pwa)
+- [Base de données](#-PostgresSQL + TypeORM)
 - [Roadmap](#-roadmap)
 - [Licence](#-licence)
 
@@ -662,6 +667,69 @@ npm run lint:fix
   ]
 }
 ```
+
+---
+
+## 🗄️ Base de données (PostgreSQL + TypeORM)
+
+Le backend est migré d’un stockage **in-memory** vers **PostgreSQL** en utilisant **TypeORM**.
+
+### Services Docker
+
+- **postgres** : base de données PostgreSQL
+- **backend** : API Express (TypeScript)
+- **frontend** : React (Nginx)
+
+### Tables principales
+
+- `users`
+- `user_profiles`
+- `boards`
+- `columns`
+- `tasks`
+- `tags`
+- `board_members` (pivot User ↔ Board)
+- `task_tags` (pivot Task ↔ Tag)
+- `migrations` (TypeORM)
+
+### 🔗 Schéma des relations
+
+```text
+┌─────────────┐         ┌─────────────────┐
+│    User     │◄───1:1──┤  UserProfile    │  [ONE-TO-ONE]
+└──────┬──────┘         └─────────────────┘
+       │ 1
+       │ N
+┌──────▼──────┐
+│    Board    │                              [ONE-TO-MANY]
+└──────┬──────┘
+       │ 1
+       │ N
+┌──────▼──────┐
+│   Column    │                              [ONE-TO-MANY]
+└──────┬──────┘
+       │ 1
+       │ N
+┌──────▼──────┐         ┌──────────────┐
+│    Task     │◄───N:N──┤     Tag      │   [MANY-TO-MANY via TaskTag]
+└─────────────┘         └──────────────┘
+
+User ◄───N:N───► Board (via BoardMember) [MANY-TO-MANY]
+
+
+# Démarrer les services
+docker-compose up -d
+
+# Voir les tables
+docker-compose exec postgres psql -U galilee_admin -d galilee_os -c "\dt"
+
+# Exécuter les migrations
+cd backend
+npm run migration:run
+
+# Lancer le seed
+npm run seed
+
 
 ---
 
