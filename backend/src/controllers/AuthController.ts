@@ -7,19 +7,23 @@ import { User } from "../entities/User";
 export class AuthController {
   static async login(req: Request, res: Response) {
     try {
-      const { email, password } = req.body;
+      const { email, password } = req.body as { email?: string; password?: string };
 
-      // TEST / CI MODE : pas de DB -> token mock
+      // Basic validation
+      if (!email || !password) {
+        return res.status(400).json({ error: "Missing credentials" });
+      }
+
+      /**
+       * TEST / CI MODE
+       * - In tests we don't want DB dependency
+       * - Return a mock token so integration tests can pass
+       */
       if (
         process.env.NODE_ENV === "test" ||
         process.env.START_SERVER === "false" ||
         !AppDataSource.isInitialized
       ) {
-        if (!email || !password) {
-          return res.status(400).json({ error: "Missing credentials" });
-        }
-
-        // Force types so tsc/CI is happy
         const secret: jwt.Secret = (process.env.JWT_SECRET ?? "test_secret") as jwt.Secret;
 
         const options: SignOptions = {
@@ -27,11 +31,10 @@ export class AuthController {
         };
 
         const token = jwt.sign({ sub: "test-user", email }, secret, options);
-
         return res.status(200).json({ token });
       }
 
-
+      // PROD / DEV MODE : real DB auth
       const userRepo = AppDataSource.getRepository(User);
 
       const user = await userRepo.findOne({
@@ -48,16 +51,16 @@ export class AuthController {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      // Strong typing for CI/tsc
       const secretProd: jwt.Secret = (process.env.JWT_SECRET ?? "dev-secret") as jwt.Secret;
 
       const token = jwt.sign(
         { userId: user.id, role: user.role },
         secretProd,
-        { expiresIn: "1h" } as SignOptions
+        { expiresIn: (process.env.JWT_EXPIRES_IN ?? "1h") as SignOptions["expiresIn"] } as SignOptions
       );
 
-
-      return res.json({
+      return res.status(200).json({
         token,
         user: {
           id: user.id,
@@ -66,9 +69,9 @@ export class AuthController {
           profile: user.profile ?? null,
         },
       });
-    } catch {
+    } catch (err) {
+      console.error("❌ AuthController.login error:", err);
       return res.status(500).json({ message: "Internal server error" });
     }
   }
 }
-
