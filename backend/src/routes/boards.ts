@@ -36,7 +36,6 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-
   try {
     // Fallback for tests
     if (!AppDataSource.isInitialized) {
@@ -47,9 +46,17 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
         updatedAt: new Date().toISOString(),
       };
 
-
       boards.push(newBoard);
       res.status(201).json({ data: newBoard });
+      return;
+    }
+
+    // ✅ FIX : Récupérer le owner depuis le JWT (via authMiddleware)
+    const authenticatedReq = req as any; // AuthenticatedRequest
+    const userId = authenticatedReq.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: "User not authenticated" });
       return;
     }
 
@@ -57,12 +64,14 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
     const board = boardRepo.create({
       title,
+      owner: { id: userId } as any, // ✅ Assigner le owner
     });
 
     const saved = await boardRepo.save(board);
 
     res.status(201).json({ data: saved });
-  } catch {
+  } catch (err) {
+    console.error("Error creating board:", err);
     res.status(500).json({ error: "Failed to create board" });
   }
 });

@@ -56,16 +56,39 @@ router.get("/", async (_req: Request, res: Response) => {
 });
 
 
-// GET /api/tasks/:id - Get task by ID (still in-memory for now)
-router.get("/:id", (req: Request, res: Response): void => {
-  const task = tasks.find((t) => t.id === req.params.id);
+// GET /api/tasks/:id - Get task by ID (migrated to DB)
+router.get("/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Fallback if DB not initialized (tests)
+    if (!AppDataSource.isInitialized) {
+      const task = tasks.find((t) => t.id === req.params.id);
+      
+      if (!task) {
+        res.status(404).json({ error: "Task not found" });
+        return;
+      }
+      
+      res.json({ data: task });
+      return;
+    }
 
-  if (!task) {
-    res.status(404).json({ error: "Task not found" });
-    return;
+    // ✅ Production: Use database
+    const taskRepo = AppDataSource.getRepository(TaskEntity);
+    
+    const task = await taskRepo.findOne({
+      where: { id: req.params.id },
+      relations: { column: true },
+    });
+
+    if (!task) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+
+    res.json({ data: task });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch task" });
   }
-
-  res.json({ data: task });
 });
 
 // POST /api/tasks - Create new task (DB if available, fallback to in-memory during tests)

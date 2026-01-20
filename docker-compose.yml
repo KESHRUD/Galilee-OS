@@ -14,19 +14,23 @@ services:
     container_name: kanban-backend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:3000"
     
     depends_on:
       - postgres
+    
+    # ✅ Variables depuis .env (pas de secrets hardcodés)
     environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - CORS_ORIGIN=http://localhost
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=galilee_admin
-      - DB_PASSWORD=galilee_password
-      - DB_NAME=galilee_os
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3000}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-galilee_admin}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-galilee_os}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1h}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -66,12 +70,15 @@ services:
     image: postgres:15
     container_name: kanban-postgres
     restart: unless-stopped
+    
+    # ✅ Credentials depuis .env
     environment:
-      - POSTGRES_USER=galilee_admin
-      - POSTGRES_PASSWORD=galilee_password
-      - POSTGRES_DB=galilee_os
+      - POSTGRES_USER=${DB_USER:-galilee_admin}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME:-galilee_os}
+    
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT_EXTERNAL:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
