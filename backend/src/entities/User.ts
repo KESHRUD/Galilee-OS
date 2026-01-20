@@ -5,7 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
+  BeforeInsert,
+  BeforeUpdate,
 } from "typeorm";
+import bcrypt from "bcrypt";
 import { UserProfile } from "./UserProfile";
 
 export type UserRole = "admin" | "student";
@@ -33,5 +36,40 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt!: Date;
+
+  // ================================================================
+  // 🔐 SÉCURITÉ : Auto-hash du mot de passe avant insertion/update
+  // ================================================================
+  
+  /**
+   * Champ temporaire pour stocker le plaintext password
+   * Utilisé uniquement avant insertion, pas persisté en DB
+   */
+  plainPassword?: string;
+
+  /**
+   * Hook exécuté AVANT l'insertion en base
+   * Hash automatiquement le mot de passe si fourni
+   */
+  @BeforeInsert()
+  async hashPasswordBeforeInsert() {
+    if (this.plainPassword) {
+      this.passwordHash = await bcrypt.hash(this.plainPassword, 10);
+      // Nettoyage : on supprime le plaintext après hash
+      delete this.plainPassword;
+    }
+  }
+
+  /**
+   * Hook exécuté AVANT la mise à jour en base
+   * Hash le nouveau mot de passe si modifié
+   */
+  @BeforeUpdate()
+  async hashPasswordBeforeUpdate() {
+    if (this.plainPassword) {
+      this.passwordHash = await bcrypt.hash(this.plainPassword, 10);
+      delete this.plainPassword;
+    }
+  }
 }
 

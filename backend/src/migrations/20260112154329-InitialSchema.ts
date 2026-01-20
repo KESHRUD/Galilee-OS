@@ -23,21 +23,29 @@ export class InitialSchema20260112154329 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE "user_profiles"`);
-    await queryRunner.query(`DROP TABLE "users"`);
-    await queryRunner.query(`DROP TABLE "tasks"`);
-    await queryRunner.query(`DROP TABLE "columns"`);
-    await queryRunner.query(`DROP TABLE "boards"`);
-    await queryRunner.query(`DROP TABLE "tags"`);
-    await queryRunner.query(`DROP TABLE "board_members"`);
-    await queryRunner.query(`DROP TABLE "task_tags"`);
-    await queryRunner.query(`ALTER TABLE "user_profiles" DROP CONSTRAINT "FK_8481388d6325e752cd4d7e26c6d"`);
-    await queryRunner.query(`ALTER TABLE "tasks" DROP CONSTRAINT "FK_0ecfe75e5bd731e00e634d70e5f"`);
-    await queryRunner.query(`ALTER TABLE "columns" DROP CONSTRAINT "FK_ac92bfd7ba33174aabef610f361"`);
-    await queryRunner.query(`ALTER TABLE "boards" DROP CONSTRAINT "FK_dcdf669d9c6727190556702de56"`);
-    await queryRunner.query(`ALTER TABLE "board_members" DROP CONSTRAINT "FK_2af5912734e7fbedc23afd07adc"`);
-    await queryRunner.query(`ALTER TABLE "board_members" DROP CONSTRAINT "FK_8dfe924ec592792320086ebb692"`);
-    await queryRunner.query(`ALTER TABLE "task_tags" DROP CONSTRAINT "FK_1470ad368e79cb5636163a4bf8d"`);
+    // ================================================================
+    // ✅ FIX : DROP les contraintes FK AVANT de DROP les tables
+    // Ordre : constraints → pivot tables → dependent tables → main tables
+    // ================================================================
+    
+    // 1. Drop Foreign Key Constraints
     await queryRunner.query(`ALTER TABLE "task_tags" DROP CONSTRAINT "FK_ac1cfe87c11bc138ee8675cff3c"`);
+    await queryRunner.query(`ALTER TABLE "task_tags" DROP CONSTRAINT "FK_1470ad368e79cb5636163a4bf8d"`);
+    await queryRunner.query(`ALTER TABLE "board_members" DROP CONSTRAINT "FK_8dfe924ec592792320086ebb692"`);
+    await queryRunner.query(`ALTER TABLE "board_members" DROP CONSTRAINT "FK_2af5912734e7fbedc23afd07adc"`);
+    await queryRunner.query(`ALTER TABLE "boards" DROP CONSTRAINT "FK_dcdf669d9c6727190556702de56"`);
+    await queryRunner.query(`ALTER TABLE "columns" DROP CONSTRAINT "FK_ac92bfd7ba33174aabef610f361"`);
+    await queryRunner.query(`ALTER TABLE "tasks" DROP CONSTRAINT "FK_0ecfe75e5bd731e00e634d70e5f"`);
+    await queryRunner.query(`ALTER TABLE "user_profiles" DROP CONSTRAINT "FK_8481388d6325e752cd4d7e26c6d"`);
+    
+    // 2. Drop Tables (reverse dependency order)
+    await queryRunner.query(`DROP TABLE "task_tags"`);       // Pivot Task-Tag
+    await queryRunner.query(`DROP TABLE "board_members"`);   // Pivot User-Board
+    await queryRunner.query(`DROP TABLE "tasks"`);           // Dépend de columns
+    await queryRunner.query(`DROP TABLE "tags"`);            // Indépendant
+    await queryRunner.query(`DROP TABLE "columns"`);         // Dépend de boards
+    await queryRunner.query(`DROP TABLE "boards"`);          // Dépend de users
+    await queryRunner.query(`DROP TABLE "user_profiles"`);   // Dépend de users
+    await queryRunner.query(`DROP TABLE "users"`);           // Table principale
   }
 }
