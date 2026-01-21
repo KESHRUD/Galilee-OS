@@ -57,10 +57,10 @@ export class AuthController {
         process.env.START_SERVER === "false" ||
         !AppDataSource.isInitialized
       ) {
-        const token = jwt.sign({ sub: "test-user", email }, this.accessSecret(), {
+        const token = jwt.sign({ sub: "test-user", email }, AuthController.accessSecret(), {
           expiresIn: (process.env.JWT_EXPIRES_IN ?? "1d") as SignOptions["expiresIn"],
         });
-        const refreshToken = jwt.sign({ sub: "test-user" }, this.refreshSecret(), {
+        const refreshToken = jwt.sign({ sub: "test-user" }, AuthController.refreshSecret(), {
           expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? "7d") as SignOptions["expiresIn"],
         });
         return res.status(200).json({ token, refreshToken });
@@ -83,9 +83,9 @@ export class AuthController {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const token = this.signAccessToken(user);
-      const refreshToken = this.signRefreshToken(user);
-      user.refreshTokenHash = this.hashToken(refreshToken);
+      const token = AuthController.signAccessToken(user);
+      const refreshToken = AuthController.signRefreshToken(user);
+      user.refreshTokenHash = AuthController.hashToken(refreshToken);
       await userRepo.save(user);
 
       return res.status(200).json({
@@ -153,9 +153,9 @@ export class AuthController {
       ];
       await columnRepo.save(defaultColumns);
 
-      const token = this.signAccessToken(savedUser);
-      const refreshToken = this.signRefreshToken(savedUser);
-      savedUser.refreshTokenHash = this.hashToken(refreshToken);
+      const token = AuthController.signAccessToken(savedUser);
+      const refreshToken = AuthController.signRefreshToken(savedUser);
+      savedUser.refreshTokenHash = AuthController.hashToken(refreshToken);
       await userRepo.save(savedUser);
 
       return res.status(201).json({
@@ -181,21 +181,21 @@ export class AuthController {
         return res.status(400).json({ error: "Missing refresh token" });
       }
 
-      const payload = jwt.verify(refreshToken, this.refreshSecret()) as { sub: string };
+      const payload = jwt.verify(refreshToken, AuthController.refreshSecret()) as { sub: string };
       const userRepo = AppDataSource.getRepository(User);
       const user = await userRepo.findOne({ where: { id: payload.sub } });
       if (!user || !user.refreshTokenHash) {
         return res.status(401).json({ error: "Invalid refresh token" });
       }
 
-      const hashed = this.hashToken(refreshToken);
+      const hashed = AuthController.hashToken(refreshToken);
       if (hashed !== user.refreshTokenHash) {
         return res.status(401).json({ error: "Invalid refresh token" });
       }
 
-      const newAccessToken = this.signAccessToken(user);
-      const newRefreshToken = this.signRefreshToken(user);
-      user.refreshTokenHash = this.hashToken(newRefreshToken);
+      const newAccessToken = AuthController.signAccessToken(user);
+      const newRefreshToken = AuthController.signRefreshToken(user);
+      user.refreshTokenHash = AuthController.hashToken(newRefreshToken);
       await userRepo.save(user);
 
       return res.status(200).json({
@@ -219,7 +219,7 @@ export class AuthController {
       const user = await userRepo.findOne({ where: { email } });
       if (user) {
         const resetToken = crypto.randomBytes(32).toString("hex");
-        user.resetPasswordTokenHash = this.hashToken(resetToken);
+        user.resetPasswordTokenHash = AuthController.hashToken(resetToken);
         user.resetPasswordExpiresAt = new Date(Date.now() + 1000 * 60 * 60);
         await userRepo.save(user);
 
@@ -250,7 +250,7 @@ export class AuthController {
       }
 
       const userRepo = AppDataSource.getRepository(User);
-      const hashed = this.hashToken(token);
+      const hashed = AuthController.hashToken(token);
       const user = await userRepo.findOne({
         where: { resetPasswordTokenHash: hashed },
       });
