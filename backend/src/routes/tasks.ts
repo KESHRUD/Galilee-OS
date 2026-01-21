@@ -12,6 +12,41 @@ import { Tag } from "../entities/Tag";
 
 const router = Router();
 
+type FrontendTask = {
+  id: string;
+  title: string;
+  description: string;
+  columnId: string;
+  tags: string[];
+  priority: "low" | "medium" | "high";
+  createdAt: number;
+  dueDate?: number;
+  subtasks: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+  }>;
+  comments: Array<{
+    id: string;
+    userId: string;
+    userName: string;
+    text: string;
+    createdAt: number;
+  }>;
+};
+
+const toFrontendTask = (task: TaskEntity): FrontendTask => ({
+  id: task.id,
+  title: task.title,
+  description: task.description ?? "",
+  columnId: task.column?.id ?? "",
+  tags: [],
+  priority: "medium",
+  createdAt: task.createdAt ? new Date(task.createdAt).getTime() : Date.now(),
+  subtasks: [],
+  comments: [],
+});
+
 // In-memory storage (will be replaced with database later)
 const tasks: Task[] = [
   {
@@ -49,7 +84,7 @@ router.get("/", async (_req: Request, res: Response) => {
       order: { createdAt: "ASC" },
     });
 
-    return res.json({ data: dbTasks });
+    return res.json({ data: dbTasks.map(toFrontendTask) });
   } catch {
     // Fallback to in-memory if DB fails
     return res.json({ data: tasks });
@@ -86,7 +121,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    res.json({ data: task });
+    res.json({ data: toFrontendTask(task) });
   } catch {
     res.status(500).json({ error: "Failed to fetch task" });
   }
@@ -138,8 +173,16 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     });
 
     const saved = await taskRepo.save(created);
+    const withColumn = await taskRepo.findOne({
+      where: { id: saved.id },
+      relations: { column: true },
+    });
+    if (!withColumn) {
+      res.status(201).json({ data: saved });
+      return;
+    }
 
-    res.status(201).json({ data: saved });
+    res.status(201).json({ data: toFrontendTask(withColumn) });
   } catch {
     res.status(500).json({ error: "Failed to create task" });
   }
@@ -214,6 +257,7 @@ router.put("/:id", async (req: Request, res: Response): Promise<void> => {
 
     const task = await taskRepo.findOne({
       where: { id: req.params.id },
+      relations: { column: true },
     });
 
     if (!task) {
@@ -226,10 +270,22 @@ router.put("/:id", async (req: Request, res: Response): Promise<void> => {
     if (typeof dto.description === "string") task.description = dto.description;
     if (typeof dto.completed === "boolean") task.completed = dto.completed;
     if (typeof dto.position === "number") task.position = dto.position;
+    if (typeof dto.columnId === "string") {
+      task.column = { id: dto.columnId } as ColumnEntity;
+    }
 
     const saved = await taskRepo.save(task);
 
-    res.json({ data: saved });
+    const withColumn = await taskRepo.findOne({
+      where: { id: saved.id },
+      relations: { column: true },
+    });
+    if (!withColumn) {
+      res.json({ data: saved });
+      return;
+    }
+
+    res.json({ data: toFrontendTask(withColumn) });
   } catch {
     res.status(500).json({ error: "Failed to update task" });
   }
