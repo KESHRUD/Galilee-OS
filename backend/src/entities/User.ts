@@ -27,6 +27,15 @@ export class User {
   @Column({ type: "varchar", default: "student" })
   role!: UserRole;
 
+  @Column({ type: "varchar", nullable: true })
+  refreshTokenHash?: string | null;
+
+  @Column({ type: "varchar", nullable: true })
+  resetPasswordTokenHash?: string | null;
+
+  @Column({ type: "timestamp", nullable: true })
+  resetPasswordExpiresAt?: Date | null;
+
   // ✅ 1:1 (ajouté maintenant pour satisfaire UserProfile)
   @OneToOne(() => UserProfile, (profile) => profile.user)
   profile?: UserProfile;

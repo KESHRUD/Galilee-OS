@@ -17,6 +17,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(user);
   }
 
+  const requestPasswordReset = async (email: string) => {
+    return authService.requestPasswordReset(email);
+  };
+
+  const resetPassword = async (token: string, password: string) => {
+    await authService.resetPassword(token, password);
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -35,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading: loading, login, register, logout, isAuthenticated: !!user, updateUserXp }}>
+    <AuthContext.Provider value={{ user, isLoading: loading, login, register, requestPasswordReset, resetPassword, logout, isAuthenticated: !!user, updateUserXp }}>
       {!loading && children}
     </AuthContext.Provider>
   );

@@ -78,6 +78,7 @@ export interface DragItem {
 export type Speciality = 'info' | 'energy' | 'telecom' | 'instrumentation' | 'macs' | 'prepa';
 
 export interface User {
+  id?: string;
   username: string;
   name: string;
   role: 'student' | 'engineer' | 'admin';
@@ -95,6 +96,8 @@ export interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (data: { email: string; password: string; speciality: Speciality }) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<{ message: string; resetToken?: string }>;
+  resetPassword: (token: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   updateUserXp: (amount: number) => Promise<void>;

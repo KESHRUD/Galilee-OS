@@ -17,6 +17,24 @@ router.post("/login", AuthController.login);
 router.post("/register", AuthController.register);
 
 /**
+ * POST /api/auth/refresh
+ * Body: { refreshToken }
+ */
+router.post("/refresh", AuthController.refresh);
+
+/**
+ * POST /api/auth/forgot-password
+ * Body: { email }
+ */
+router.post("/forgot-password", AuthController.requestPasswordReset);
+
+/**
+ * POST /api/auth/reset-password
+ * Body: { token, password }
+ */
+router.post("/reset-password", AuthController.resetPassword);
+
+/**
  * GET /api/auth/me
  * Header: Authorization: Bearer <token>
  */

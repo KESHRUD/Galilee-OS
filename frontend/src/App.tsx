@@ -375,9 +375,11 @@ const Dashboard = () => {
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
+  const { mode } = useMode();
   const [showLanding, setShowLanding] = useState(true);
 
   if (isAuthenticated) return <Dashboard />;
+  if (mode === 'ddaw') return <Login />;
   if (showLanding) return <LandingPage onStart={() => setShowLanding(false)} />;
   return <Login onBack={() => setShowLanding(true)} />;
 };

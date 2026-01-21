@@ -27,6 +27,7 @@ const mapUser = (apiUser: ApiUser, speciality: Speciality = 'prepa'): User => {
   if (level >= 20) rank = 'Legend';
 
   return {
+    id: apiUser.id,
     username: apiUser.email,
     name: displayName,
     role: apiUser.role === 'admin' ? 'admin' : 'student',
@@ -53,6 +54,14 @@ export const authService = {
     const user = mapUser(result.user as ApiUser, data.speciality);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     return user;
+  },
+
+  requestPasswordReset: async (email: string): Promise<{ message: string; resetToken?: string }> => {
+    return authAPI.requestPasswordReset(email);
+  },
+
+  resetPassword: async (token: string, password: string): Promise<void> => {
+    return authAPI.resetPassword(token, password);
   },
 
   logout: () => {

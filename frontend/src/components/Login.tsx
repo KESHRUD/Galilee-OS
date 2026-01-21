@@ -20,13 +20,17 @@ const SPECIALITIES: { id: Speciality; icon: React.ComponentType<{ size?: number;
 ];
 
 export const Login: React.FC<LoginProps> = ({ onBack }) => {
-  const { login, register } = useAuth();
+  const { login, register, requestPasswordReset, resetPassword } = useAuth();
   const { theme, t } = useTheme();
   
   const [isRegister, setIsRegister] = useState(false);
+  const [isReset, setIsReset] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [speciality, setSpeciality] = useState<Speciality>('prepa');
+  const [resetToken, setResetToken] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
 
@@ -42,6 +46,35 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
     }
     
     setIsLoading(false);
+  };
+
+  const handleResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setIsLoading(true);
+    try {
+      const result = await requestPasswordReset(email);
+      setResetMessage(result.message);
+      if (result.resetToken) {
+        setResetToken(result.resetToken);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetToken || !resetNewPassword) return;
+    setIsLoading(true);
+    try {
+      await resetPassword(resetToken, resetNewPassword);
+      setResetMessage('Mot de passe réinitialisé. Connecte-toi.');
+      setIsReset(false);
+      setPassword('');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // GALILÉE THEME LOGIN
@@ -107,46 +140,110 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                 )}
 
                 <div className="space-y-4 max-w-md mx-auto">
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(34,211,238,0.3)] outline-none transition-all placeholder-slate-800 text-sm"
-                                placeholder={t('email_placeholder')}
-                            />
-                        </div>
+                    {!isReset ? (
+                        <>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(34,211,238,0.3)] outline-none transition-all placeholder-slate-800 text-sm"
+                                        placeholder={t('email_placeholder')}
+                                    />
+                                </div>
 
-                        <div className="animate-fade-in-up">
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(34,211,238,0.3)] outline-none transition-all placeholder-slate-800 text-sm"
-                                placeholder={t('password_placeholder') || 'Mot de passe'}
-                            />
-                        </div>
+                                <div className="animate-fade-in-up">
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(34,211,238,0.3)] outline-none transition-all placeholder-slate-800 text-sm"
+                                        placeholder={t('password_placeholder') || 'Mot de passe'}
+                                    />
+                                </div>
 
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full bg-cyan-800/50 hover:bg-cyan-700 text-cyan-300 border border-cyan-600 py-3 font-bold uppercase tracking-widest transition-all hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] disabled:opacity-50 flex items-center justify-center gap-2 group-hover:bg-cyan-900"
-                        >
-                             {isLoading ? (
-                                <span className="animate-pulse">{t('loading')}</span>
-                            ) : (
-                                <><span>{isRegister ? t('register_init') : t('login_init')}</span> <ArrowRight size={16} /></>
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full bg-cyan-800/50 hover:bg-cyan-700 text-cyan-300 border border-cyan-600 py-3 font-bold uppercase tracking-widest transition-all hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] disabled:opacity-50 flex items-center justify-center gap-2 group-hover:bg-cyan-900"
+                                >
+                                     {isLoading ? (
+                                        <span className="animate-pulse">{t('loading')}</span>
+                                    ) : (
+                                        <><span>{isRegister ? t('register_init') : t('login_init')}</span> <ArrowRight size={16} /></>
+                                    )}
+                                </button>
+                            </form>
+
+                            <button 
+                                onClick={() => setIsRegister(!isRegister)}
+                                className="w-full text-center text-xs text-cyan-600 hover:text-cyan-300 underline mt-4 uppercase tracking-widest"
+                            >
+                                {isRegister ? t('switch_to_login') : t('switch_to_register')}
+                            </button>
+                            <button 
+                                onClick={() => setIsReset(true)}
+                                className="w-full text-center text-xs text-cyan-600 hover:text-cyan-300 underline uppercase tracking-widest"
+                            >
+                                {t('forgot_password') || 'Mot de passe oublié'}
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <form onSubmit={handleResetRequest} className="space-y-3">
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(34,211,238,0.3)] outline-none transition-all placeholder-slate-800 text-sm"
+                                    placeholder={t('email_placeholder')}
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full bg-cyan-800/50 hover:bg-cyan-700 text-cyan-300 border border-cyan-600 py-2 font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+                                >
+                                    {isLoading ? t('loading') : 'Recevoir le token'}
+                                </button>
+                            </form>
+
+                            {resetMessage && (
+                                <div className="text-xs text-cyan-300">{resetMessage}</div>
                             )}
-                        </button>
-                    </form>
-                    
-                    <button 
-                        onClick={() => setIsRegister(!isRegister)}
-                        className="w-full text-center text-xs text-cyan-600 hover:text-cyan-300 underline mt-4 uppercase tracking-widest"
-                    >
-                        {isRegister ? t('switch_to_login') : t('switch_to_register')}
-                    </button>
+
+                            <form onSubmit={handleResetPassword} className="space-y-3">
+                                <input
+                                    type="text"
+                                    value={resetToken}
+                                    onChange={(e) => setResetToken(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono outline-none transition-all text-sm"
+                                    placeholder="Reset token"
+                                />
+                                <input
+                                    type="password"
+                                    value={resetNewPassword}
+                                    onChange={(e) => setResetNewPassword(e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono outline-none transition-all text-sm"
+                                    placeholder={t('password_placeholder') || 'Nouveau mot de passe'}
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full bg-cyan-800/50 hover:bg-cyan-700 text-cyan-300 border border-cyan-600 py-2 font-bold uppercase tracking-widest transition-all disabled:opacity-50"
+                                >
+                                    {isLoading ? t('loading') : 'Réinitialiser'}
+                                </button>
+                            </form>
+
+                            <button 
+                                onClick={() => setIsReset(false)}
+                                className="w-full text-center text-xs text-cyan-600 hover:text-cyan-300 underline uppercase tracking-widest"
+                            >
+                                {t('back') || 'Retour'}
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
@@ -194,41 +291,105 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
             </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-            <div>
-                <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                    placeholder={t('email_placeholder')}
-                />
-            </div>
-            <div>
-                <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                    placeholder={t('password_placeholder') || 'Mot de passe'}
-                />
-            </div>
-            <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg shadow-indigo-200"
-            >
-                {isLoading ? t('loading') : (isRegister ? t('register_init') : t('login_init'))}
-                {!isLoading && <ArrowRight size={18} />}
-            </button>
-        </form>
+        {!isReset ? (
+            <>
+                <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                    <div>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                            placeholder={t('email_placeholder')}
+                        />
+                    </div>
+                    <div>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                            placeholder={t('password_placeholder') || 'Mot de passe'}
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-70 shadow-lg shadow-indigo-200"
+                    >
+                        {isLoading ? t('loading') : (isRegister ? t('register_init') : t('login_init'))}
+                        {!isLoading && <ArrowRight size={18} />}
+                    </button>
+                </form>
 
-        <button 
-            onClick={() => setIsRegister(!isRegister)}
-            className="w-full text-center text-sm text-indigo-600 hover:text-indigo-800 font-medium mt-6"
-        >
-            {isRegister ? t('switch_to_login') : t('switch_to_register')}
-        </button>
+                <button 
+                    onClick={() => setIsRegister(!isRegister)}
+                    className="w-full text-center text-sm text-indigo-600 hover:text-indigo-800 font-medium mt-6"
+                >
+                    {isRegister ? t('switch_to_login') : t('switch_to_register')}
+                </button>
+                <button 
+                    onClick={() => setIsReset(true)}
+                    className="w-full text-center text-sm text-indigo-600 hover:text-indigo-800 font-medium mt-2"
+                >
+                    {t('forgot_password') || 'Mot de passe oublié'}
+                </button>
+            </>
+        ) : (
+            <>
+                <form onSubmit={handleResetRequest} className="space-y-3 mt-4">
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                        placeholder={t('email_placeholder')}
+                    />
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-70 shadow-lg shadow-indigo-200"
+                    >
+                        {isLoading ? t('loading') : 'Recevoir le token'}
+                    </button>
+                </form>
+
+                {resetMessage && (
+                    <div className="text-xs text-slate-500 mt-2">{resetMessage}</div>
+                )}
+
+                <form onSubmit={handleResetPassword} className="space-y-3 mt-3">
+                    <input
+                        type="text"
+                        value={resetToken}
+                        onChange={(e) => setResetToken(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none transition-all"
+                        placeholder="Reset token"
+                    />
+                    <input
+                        type="password"
+                        value={resetNewPassword}
+                        onChange={(e) => setResetNewPassword(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none transition-all"
+                        placeholder={t('password_placeholder') || 'Nouveau mot de passe'}
+                    />
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-70 shadow-lg shadow-indigo-200"
+                    >
+                        {isLoading ? t('loading') : 'Réinitialiser'}
+                    </button>
+                </form>
+
+                <button 
+                    onClick={() => setIsReset(false)}
+                    className="w-full text-center text-sm text-indigo-600 hover:text-indigo-800 font-medium mt-4"
+                >
+                    {t('back') || 'Retour'}
+                </button>
+            </>
+        )}
       </div>
     </div>
   );
