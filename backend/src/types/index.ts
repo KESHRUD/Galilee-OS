@@ -49,6 +49,7 @@ export interface CreateTaskDTO {
 export interface UpdateTaskDTO {
   title?: string;
   description?: string;
+  columnId?: string;
   status?: 'todo' | 'in-progress' | 'done';
   priority?: 'low' | 'medium' | 'high';
 }
