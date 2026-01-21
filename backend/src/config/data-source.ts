@@ -11,6 +11,11 @@ import { Tag } from "../entities/Tag";
 import { BoardMember } from "../entities/BoardMember";
 import { TaskTag } from "../entities/TaskTag";
 
+const migrationsPath =
+  process.env.NODE_ENV === "production"
+    ? "dist/migrations/**/*.js"
+    : "src/migrations/**/*.ts";
+
 export const AppDataSource = new DataSource({
   type: "postgres",
   host: process.env.DB_HOST || "localhost",
@@ -24,5 +29,5 @@ export const AppDataSource = new DataSource({
   logging: false,
 
   entities: [User, UserProfile, Board, ColumnEntity, Task, Tag, BoardMember, TaskTag],
-  migrations: ["src/migrations/**/*.ts"],
+  migrations: [migrationsPath],
 });
