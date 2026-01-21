@@ -16,6 +16,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ onNewTask, onNew
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const openPalette = () => {
+    setIsOpen(true);
+    setQuery('');
+    setSelectedIndex(0);
+  };
+
+  const closePalette = () => {
+    setIsOpen(false);
+  };
+
   const commands = [
     { id: 'new_task', label: t('cmd_new_task'), icon: <Plus size={16}/>, action: onNewTask },
     { id: 'new_deck', label: t('cmd_new_deck'), icon: <Plus size={16}/>, action: onNewDeck },
@@ -29,15 +39,19 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ onNewTask, onNew
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        setIsOpen(prev => !prev);
+        if (isOpen) {
+          closePalette();
+        } else {
+          openPalette();
+        }
       }
       if (isOpen) {
-        if (e.key === 'Escape') setIsOpen(false);
-        if (e.key === 'ArrowDown') {
+        if (e.key === 'Escape') closePalette();
+        if (e.key === 'ArrowDown' && filteredCommands.length > 0) {
             e.preventDefault();
             setSelectedIndex(prev => (prev + 1) % filteredCommands.length);
         }
-        if (e.key === 'ArrowUp') {
+        if (e.key === 'ArrowUp' && filteredCommands.length > 0) {
             e.preventDefault();
             setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
         }
@@ -45,7 +59,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ onNewTask, onNew
             e.preventDefault();
             if (filteredCommands[selectedIndex]) {
                 filteredCommands[selectedIndex].action();
-                setIsOpen(false);
+                closePalette();
                 audioManager.play('click', theme);
             }
         }
@@ -60,8 +74,6 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ onNewTask, onNew
     if (isOpen && inputRef.current) {
         inputRef.current.focus();
     }
-    setQuery('');
-    setSelectedIndex(0);
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -91,7 +103,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ onNewTask, onNew
                 {filteredCommands.map((cmd, index) => (
                     <button
                         key={cmd.id}
-                        onClick={() => { cmd.action(); setIsOpen(false); }}
+                        onClick={() => { cmd.action(); closePalette(); }}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors
                             ${index === selectedIndex 
                                 ? (isGalilee ? 'bg-cyan-900/50 text-cyan-300' : 'bg-indigo-50 text-indigo-700') 
