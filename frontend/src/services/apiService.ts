@@ -16,6 +16,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://galilee-os-backend.onre
 
 // Token JWT (stocké en localStorage)
 let authToken: string | null = localStorage.getItem('jwt_token');
+let refreshToken: string | null = localStorage.getItem('refresh_token');
 
 export const setAuthToken = (token: string | null) => {
   authToken = token;
@@ -28,11 +29,46 @@ export const setAuthToken = (token: string | null) => {
 
 export const getAuthToken = () => authToken;
 
+export const setRefreshToken = (token: string | null) => {
+  refreshToken = token;
+  if (token) {
+    localStorage.setItem('refresh_token', token);
+  } else {
+    localStorage.removeItem('refresh_token');
+  }
+};
+
+export const getRefreshToken = () => refreshToken;
+
 // Headers pour les requêtes API
 const getHeaders = () => ({
   'Content-Type': 'application/json',
   ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
 });
+
+const apiFetch = async (url: string, options: RequestInit = {}, retry = true) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...getHeaders(),
+      ...(options.headers || {}),
+    },
+  });
+
+  if (response.status === 401 && retry && refreshToken) {
+    try {
+      const refreshed = await authAPI.refresh(refreshToken);
+      setAuthToken(refreshed.token);
+      setRefreshToken(refreshed.refreshToken);
+      return apiFetch(url, options, false);
+    } catch {
+      setAuthToken(null);
+      setRefreshToken(null);
+    }
+  }
+
+  return response;
+};
 
 /**
  * ============================================================================
@@ -50,9 +86,7 @@ export const tasksAPI = {
       return await db.getAllTasks();
     } else {
       // Mode DDAW : Backend API
-      const response = await fetch(`${API_URL}/api/tasks`, {
-        headers: getHeaders(),
-      });
+      const response = await apiFetch(`${API_URL}/api/tasks`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch tasks: ${response.statusText}`);
@@ -71,9 +105,7 @@ export const tasksAPI = {
       const allTasks = await db.getAllTasks();
       return allTasks.find(task => task.id === id) || null;
     } else {
-      const response = await fetch(`${API_URL}/api/tasks/${id}`, {
-        headers: getHeaders(),
-      });
+      const response = await apiFetch(`${API_URL}/api/tasks/${id}`);
       
       if (!response.ok) {
         if (response.status === 404) return null;
@@ -98,9 +130,8 @@ export const tasksAPI = {
       await db.saveTask(created);
       return created;
     } else {
-      const response = await fetch(`${API_URL}/api/tasks`, {
+      const response = await apiFetch(`${API_URL}/api/tasks`, {
         method: 'POST',
-        headers: getHeaders(),
         body: JSON.stringify(task),
       });
       
@@ -125,9 +156,8 @@ export const tasksAPI = {
       await db.saveTask(updated);
       return updated;
     } else {
-      const response = await fetch(`${API_URL}/api/tasks/${id}`, {
+      const response = await apiFetch(`${API_URL}/api/tasks/${id}`, {
         method: 'PUT',
-        headers: getHeaders(),
         body: JSON.stringify(updates),
       });
       
@@ -147,9 +177,8 @@ export const tasksAPI = {
     if (mode === 'pwa') {
       await db.deleteTask(id);
     } else {
-      const response = await fetch(`${API_URL}/api/tasks/${id}`, {
+      const response = await apiFetch(`${API_URL}/api/tasks/${id}`, {
         method: 'DELETE',
-        headers: getHeaders(),
       });
       
       if (!response.ok) {
@@ -173,9 +202,7 @@ export const columnsAPI = {
     if (mode === 'pwa') {
       return await db.getAllColumns();
     } else {
-      const response = await fetch(`${API_URL}/api/columns`, {
-        headers: getHeaders(),
-      });
+      const response = await apiFetch(`${API_URL}/api/columns`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch columns: ${response.statusText}`);
@@ -198,9 +225,8 @@ export const columnsAPI = {
       await db.saveColumn(created);
       return created;
     } else {
-      const response = await fetch(`${API_URL}/api/columns`, {
+      const response = await apiFetch(`${API_URL}/api/columns`, {
         method: 'POST',
-        headers: getHeaders(),
         body: JSON.stringify(column),
       });
       
@@ -225,9 +251,8 @@ export const columnsAPI = {
       await db.saveColumn(updated);
       return updated;
     } else {
-      const response = await fetch(`${API_URL}/api/columns/${id}`, {
+      const response = await apiFetch(`${API_URL}/api/columns/${id}`, {
         method: 'PUT',
-        headers: getHeaders(),
         body: JSON.stringify(updates),
       });
       
@@ -247,9 +272,8 @@ export const columnsAPI = {
     if (mode === 'pwa') {
       await db.deleteColumn(id);
     } else {
-      const response = await fetch(`${API_URL}/api/columns/${id}`, {
+      const response = await apiFetch(`${API_URL}/api/columns/${id}`, {
         method: 'DELETE',
-        headers: getHeaders(),
       });
       
       if (!response.ok) {
@@ -269,7 +293,7 @@ export const authAPI = {
   /**
    * Login
    */
-  async login(email: string, password: string): Promise<{ token: string; user: unknown }> {
+  async login(email: string, password: string): Promise<{ token: string; refreshToken: string; user: unknown }> {
     const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -282,13 +306,14 @@ export const authAPI = {
     
     const data = await response.json();
     setAuthToken(data.token);
+    setRefreshToken(data.refreshToken);
     return data;
   },
 
   /**
    * Register
    */
-  async register(email: string, password: string): Promise<{ token: string; user: unknown }> {
+  async register(email: string, password: string): Promise<{ token: string; refreshToken: string; user: unknown }> {
     const response = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -302,7 +327,50 @@ export const authAPI = {
 
     const data = await response.json();
     setAuthToken(data.token);
+    setRefreshToken(data.refreshToken);
     return data;
+  },
+
+  async refresh(currentRefreshToken: string): Promise<{ token: string; refreshToken: string }> {
+    const response = await fetch(`${API_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: currentRefreshToken }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Refresh failed');
+    }
+
+    return response.json();
+  },
+
+  async requestPasswordReset(email: string): Promise<{ message: string; resetToken?: string }> {
+    const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'Request failed');
+    }
+
+    return response.json();
+  },
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'Reset failed');
+    }
   },
 
   /**
@@ -310,6 +378,7 @@ export const authAPI = {
    */
   logout() {
     setAuthToken(null);
+    setRefreshToken(null);
   },
 };
 

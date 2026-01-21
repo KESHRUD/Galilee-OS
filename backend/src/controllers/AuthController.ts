@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
 import { UserProfile } from "../entities/UserProfile";
@@ -9,6 +10,34 @@ import { Board } from "../entities/Board";
 import { ColumnEntity } from "../entities/Column";
 
 export class AuthController {
+  private static accessSecret(): jwt.Secret {
+    return (process.env.JWT_SECRET ?? "dev-secret") as jwt.Secret;
+  }
+
+  private static refreshSecret(): jwt.Secret {
+    return (process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET ?? "dev-secret") as jwt.Secret;
+  }
+
+  private static signAccessToken(user: User) {
+    return jwt.sign(
+      { sub: user.id, email: user.email, role: user.role },
+      this.accessSecret(),
+      { expiresIn: (process.env.JWT_EXPIRES_IN ?? "15m") as SignOptions["expiresIn"] } as SignOptions
+    );
+  }
+
+  private static signRefreshToken(user: User) {
+    return jwt.sign(
+      { sub: user.id },
+      this.refreshSecret(),
+      { expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? "7d") as SignOptions["expiresIn"] } as SignOptions
+    );
+  }
+
+  private static hashToken(token: string) {
+    return crypto.createHash("sha256").update(token).digest("hex");
+  }
+
   static async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body as { email?: string; password?: string };
@@ -28,14 +57,13 @@ export class AuthController {
         process.env.START_SERVER === "false" ||
         !AppDataSource.isInitialized
       ) {
-        const secret: jwt.Secret = (process.env.JWT_SECRET ?? "test_secret") as jwt.Secret;
-
-        const options: SignOptions = {
+        const token = jwt.sign({ sub: "test-user", email }, this.accessSecret(), {
           expiresIn: (process.env.JWT_EXPIRES_IN ?? "1d") as SignOptions["expiresIn"],
-        };
-
-        const token = jwt.sign({ sub: "test-user", email }, secret, options);
-        return res.status(200).json({ token });
+        });
+        const refreshToken = jwt.sign({ sub: "test-user" }, this.refreshSecret(), {
+          expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ?? "7d") as SignOptions["expiresIn"],
+        });
+        return res.status(200).json({ token, refreshToken });
       }
 
       // PROD / DEV MODE : real DB auth
@@ -55,17 +83,14 @@ export class AuthController {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Strong typing for CI/tsc
-      const secretProd: jwt.Secret = (process.env.JWT_SECRET ?? "dev-secret") as jwt.Secret;
-
-      const token = jwt.sign(
-        { sub: user.id, email: user.email, role: user.role },
-        secretProd,
-        { expiresIn: (process.env.JWT_EXPIRES_IN ?? "1h") as SignOptions["expiresIn"] } as SignOptions
-      );
+      const token = this.signAccessToken(user);
+      const refreshToken = this.signRefreshToken(user);
+      user.refreshTokenHash = this.hashToken(refreshToken);
+      await userRepo.save(user);
 
       return res.status(200).json({
         token,
+        refreshToken,
         user: {
           id: user.id,
           email: user.email,
@@ -128,15 +153,14 @@ export class AuthController {
       ];
       await columnRepo.save(defaultColumns);
 
-      const secretProd: jwt.Secret = (process.env.JWT_SECRET ?? "dev-secret") as jwt.Secret;
-      const token = jwt.sign(
-        { sub: savedUser.id, email: savedUser.email, role: savedUser.role },
-        secretProd,
-        { expiresIn: (process.env.JWT_EXPIRES_IN ?? "1h") as SignOptions["expiresIn"] } as SignOptions
-      );
+      const token = this.signAccessToken(savedUser);
+      const refreshToken = this.signRefreshToken(savedUser);
+      savedUser.refreshTokenHash = this.hashToken(refreshToken);
+      await userRepo.save(savedUser);
 
       return res.status(201).json({
         token,
+        refreshToken,
         user: {
           id: savedUser.id,
           email: savedUser.email,
@@ -146,6 +170,102 @@ export class AuthController {
       });
     } catch (err) {
       console.error("❌ AuthController.register error:", err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
+  static async refresh(req: Request, res: Response) {
+    try {
+      const { refreshToken } = req.body as { refreshToken?: string };
+      if (!refreshToken) {
+        return res.status(400).json({ error: "Missing refresh token" });
+      }
+
+      const payload = jwt.verify(refreshToken, this.refreshSecret()) as { sub: string };
+      const userRepo = AppDataSource.getRepository(User);
+      const user = await userRepo.findOne({ where: { id: payload.sub } });
+      if (!user || !user.refreshTokenHash) {
+        return res.status(401).json({ error: "Invalid refresh token" });
+      }
+
+      const hashed = this.hashToken(refreshToken);
+      if (hashed !== user.refreshTokenHash) {
+        return res.status(401).json({ error: "Invalid refresh token" });
+      }
+
+      const newAccessToken = this.signAccessToken(user);
+      const newRefreshToken = this.signRefreshToken(user);
+      user.refreshTokenHash = this.hashToken(newRefreshToken);
+      await userRepo.save(user);
+
+      return res.status(200).json({
+        token: newAccessToken,
+        refreshToken: newRefreshToken,
+      });
+    } catch (err) {
+      console.error("❌ AuthController.refresh error:", err);
+      return res.status(401).json({ error: "Invalid refresh token" });
+    }
+  }
+
+  static async requestPasswordReset(req: Request, res: Response) {
+    try {
+      const { email } = req.body as { email?: string };
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      const userRepo = AppDataSource.getRepository(User);
+      const user = await userRepo.findOne({ where: { email } });
+      if (user) {
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        user.resetPasswordTokenHash = this.hashToken(resetToken);
+        user.resetPasswordExpiresAt = new Date(Date.now() + 1000 * 60 * 60);
+        await userRepo.save(user);
+
+        if (
+          process.env.NODE_ENV !== "production" ||
+          process.env.EXPOSE_RESET_TOKEN === "true"
+        ) {
+          return res.status(200).json({ message: "Reset token generated", resetToken });
+        }
+      }
+
+      return res.status(200).json({ message: "If an account exists, a reset email was sent" });
+    } catch (err) {
+      console.error("❌ AuthController.requestPasswordReset error:", err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
+  static async resetPassword(req: Request, res: Response) {
+    try {
+      const { token, password } = req.body as { token?: string; password?: string };
+      if (!token || !password) {
+        return res.status(400).json({ error: "Token and password are required" });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+
+      const userRepo = AppDataSource.getRepository(User);
+      const hashed = this.hashToken(token);
+      const user = await userRepo.findOne({
+        where: { resetPasswordTokenHash: hashed },
+      });
+      if (!user || !user.resetPasswordExpiresAt || user.resetPasswordExpiresAt < new Date()) {
+        return res.status(400).json({ error: "Invalid or expired token" });
+      }
+
+      user.passwordHash = await bcrypt.hash(password, 10);
+      user.resetPasswordTokenHash = null;
+      user.resetPasswordExpiresAt = null;
+      await userRepo.save(user);
+
+      return res.status(200).json({ message: "Password reset successful" });
+    } catch (err) {
+      console.error("❌ AuthController.resetPassword error:", err);
       return res.status(500).json({ message: "Internal server error" });
     }
   }
