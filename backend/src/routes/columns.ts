@@ -134,4 +134,35 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
 });
 
+/**
+ * DELETE /api/columns/:id
+ */
+router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Fallback tests
+    if (!AppDataSource.isInitialized) {
+      const index = columns.findIndex((c) => c.id === req.params.id);
+      if (index === -1) {
+        res.status(404).json({ error: "Column not found" });
+        return;
+      }
+      columns.splice(index, 1);
+      res.status(204).send();
+      return;
+    }
+
+    const columnRepo = AppDataSource.getRepository(ColumnEntity);
+    const result = await columnRepo.delete({ id: req.params.id });
+    if (!result.affected) {
+      res.status(404).json({ error: "Column not found" });
+      return;
+    }
+
+    res.status(204).send();
+  } catch (err) {
+    console.error("❌ delete column error:", err);
+    res.status(500).json({ error: "Failed to delete column" });
+  }
+});
+
 export default router;
