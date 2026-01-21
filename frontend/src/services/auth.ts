@@ -1,121 +1,63 @@
 
 
 import type { User, Speciality } from '../types';
+import { authAPI } from './apiService';
 
 const STORAGE_KEY = 'sup_galilee_auth_user';
-const USERS_REGISTRY_KEY = 'sup_galilee_users_registry';
 
-// Helper to get all registered users
-const getUsersRegistry = (): Record<string, User> => {
-  const stored = localStorage.getItem(USERS_REGISTRY_KEY);
-  return stored ? JSON.parse(stored) : {};
+type ApiUser = {
+  id: string;
+  email: string;
+  role: 'admin' | 'student';
+  profile?: { xp?: number; level?: number } | null;
 };
 
-// Helper to save a user to the registry
-const saveUserToRegistry = (user: User) => {
-  const registry = getUsersRegistry();
-  registry[user.username.toLowerCase()] = user;
-  localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-};
+const mapUser = (apiUser: ApiUser, speciality: Speciality = 'prepa'): User => {
+  const nameSeed = apiUser.email.split('@')[0] || 'user';
+  const displayName = nameSeed.charAt(0).toUpperCase() + nameSeed.slice(1);
+  const avatarSeed = `${speciality}_${nameSeed}`;
+  const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${avatarSeed}&backgroundColor=transparent`;
+  const xp = apiUser.profile?.xp ?? 0;
+  const level = apiUser.profile?.level ?? 1;
 
-// Helper to get a user from the registry by username
-const getUserFromRegistry = (username: string): User | null => {
-  const registry = getUsersRegistry();
-  return registry[username.toLowerCase()] || null;
+  let rank = 'Novice';
+  if (level >= 2) rank = 'Adept';
+  if (level >= 5) rank = 'Engineer';
+  if (level >= 10) rank = 'Senior';
+  if (level >= 20) rank = 'Legend';
+
+  return {
+    username: apiUser.email,
+    name: displayName,
+    role: apiUser.role === 'admin' ? 'admin' : 'student',
+    provider: 'local',
+    speciality,
+    email: apiUser.email,
+    avatarUrl,
+    xp,
+    level,
+    rank,
+  };
 };
 
 export const authService = {
-  // Simulates a Login API Call
-  login: async (username: string, provider: 'google' | 'local' = 'local', speciality?: Speciality): Promise<User> => {
-    
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    let user: User;
-    
-    const seed = username.toLowerCase().trim();
-    // Use speciality to influence avatar style if possible, or just seed
-    const avatarSeed = speciality ? `${speciality}_${seed}` : seed;
-    const robotAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${avatarSeed}&backgroundColor=transparent`;
-    
-    if (provider === 'google') {
-        user = {
-            username: 'google_user',
-            name: 'Étudiant Sup Galilée',
-            role: 'engineer',
-            avatarUrl: 'https://api.dicebear.com/7.x/bottts/svg?seed=supgalilee_student&backgroundColor=transparent', 
-            provider: 'google',
-            speciality: 'info', // Default for google demo
-            xp: 0,
-            level: 1,
-            rank: 'Novice'
-        };
-    } else {
-        // Check if user already exists in registry (returning user)
-        const existingUser = getUserFromRegistry(username);
-        
-        if (existingUser) {
-            // User found! Load their existing session
-            user = existingUser;
-        } else {
-            // New user - create new account
-            user = {
-                username: username.toLowerCase().trim(),
-                name: username.charAt(0).toUpperCase() + username.slice(1),
-                role: 'engineer',
-                provider: 'local',
-                avatarUrl: robotAvatar,
-                speciality: speciality || 'prepa',
-                xp: 0,
-                level: 1,
-                rank: 'Novice'
-            };
-            // Save to registry for future logins
-            saveUserToRegistry(user);
-        }
-    }
-    
+  login: async (email: string, password: string): Promise<User> => {
+    const data = await authAPI.login(email, password);
+    const user = mapUser(data.user as ApiUser);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     return user;
   },
 
-  // Simulates a Registration API Call
-  register: async (data: { username: string; email: string; speciality: Speciality }): Promise<User> => {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const normalizedUsername = data.username.toLowerCase().trim();
-    
-    // Check if user already exists
-    const existingUser = getUserFromRegistry(normalizedUsername);
-    if (existingUser) {
-      // User already exists - just log them in with their existing data
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(existingUser));
-      return existingUser;
-    }
-
-    const robotAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${data.speciality}_${normalizedUsername}&backgroundColor=transparent`;
-
-    const newUser: User = {
-        username: normalizedUsername,
-        name: data.username.charAt(0).toUpperCase() + data.username.slice(1),
-        email: data.email,
-        role: 'engineer',
-        speciality: data.speciality,
-        provider: 'local',
-        avatarUrl: robotAvatar,
-        xp: 0,
-        level: 1,
-        rank: 'Novice'
-    };
-
-    // Save to registry for future logins
-    saveUserToRegistry(newUser);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
-    return newUser;
+  register: async (data: { email: string; password: string; speciality: Speciality }): Promise<User> => {
+    const result = await authAPI.register(data.email, data.password);
+    const user = mapUser(result.user as ApiUser, data.speciality);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+    return user;
   },
 
   logout: () => {
-    // Only remove current session, NOT the user from registry
     localStorage.removeItem(STORAGE_KEY);
+    authAPI.logout();
   },
 
   getCurrentUser: (): User | null => {
@@ -123,31 +65,22 @@ export const authService = {
     return stored ? JSON.parse(stored) : null;
   },
 
-  // Check if a username exists in the registry
-  userExists: (username: string): boolean => {
-    return getUserFromRegistry(username) !== null;
-  },
-
   updateXp: async (amount: number): Promise<User | null> => {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return null;
-      
-      const user = JSON.parse(stored) as User;
-      const newXp = (user.xp || 0) + amount;
-      const newLevel = Math.floor(Math.sqrt(newXp / 100)) + 1;
-      
-      let newRank = 'Novice';
-      if (newLevel >= 2) newRank = 'Adept';
-      if (newLevel >= 5) newRank = 'Engineer';
-      if (newLevel >= 10) newRank = 'Senior';
-      if (newLevel >= 20) newRank = 'Legend';
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
 
-      const updatedUser = { ...user, xp: newXp, level: newLevel, rank: newRank };
-      
-      // Update both current session and registry
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
-      saveUserToRegistry(updatedUser);
-      
-      return updatedUser;
+    const user = JSON.parse(stored) as User;
+    const newXp = (user.xp || 0) + amount;
+    const newLevel = Math.floor(Math.sqrt(newXp / 100)) + 1;
+
+    let newRank = 'Novice';
+    if (newLevel >= 2) newRank = 'Adept';
+    if (newLevel >= 5) newRank = 'Engineer';
+    if (newLevel >= 10) newRank = 'Senior';
+    if (newLevel >= 20) newRank = 'Legend';
+
+    const updatedUser = { ...user, xp: newXp, level: newLevel, rank: newRank };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+    return updatedUser;
   }
 };

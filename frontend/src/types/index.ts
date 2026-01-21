@@ -93,8 +93,8 @@ export interface User {
 export interface AuthContextType {
   isLoading: boolean;
   user: User | null;
-  login: (username: string, provider?: 'google' | 'local', speciality?: Speciality) => Promise<void>;
-  register: (data: { username: string; email: string; speciality: Speciality }) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: { email: string; password: string; speciality: Speciality }) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   updateUserXp: (amount: number) => Promise<void>;

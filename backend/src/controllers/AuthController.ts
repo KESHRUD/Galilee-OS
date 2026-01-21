@@ -3,6 +3,8 @@ import jwt, { type SignOptions } from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
+import { UserProfile } from "../entities/UserProfile";
+import type { AuthenticatedRequest } from "../middleware/AuthContext";
 
 export class AuthController {
   static async login(req: Request, res: Response) {
@@ -55,7 +57,7 @@ export class AuthController {
       const secretProd: jwt.Secret = (process.env.JWT_SECRET ?? "dev-secret") as jwt.Secret;
 
       const token = jwt.sign(
-        { userId: user.id, role: user.role },
+        { sub: user.id, email: user.email, role: user.role },
         secretProd,
         { expiresIn: (process.env.JWT_EXPIRES_IN ?? "1h") as SignOptions["expiresIn"] } as SignOptions
       );
@@ -73,5 +75,78 @@ export class AuthController {
       console.error("❌ AuthController.login error:", err);
       return res.status(500).json({ message: "Internal server error" });
     }
+  }
+
+  static async register(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body as { email?: string; password?: string };
+
+      if (!email || !password) {
+        return res.status(400).json({ error: "Missing credentials" });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+
+      const userRepo = AppDataSource.getRepository(User);
+      const profileRepo = AppDataSource.getRepository(UserProfile);
+
+      const existing = await userRepo.findOne({ where: { email } });
+      if (existing) {
+        return res.status(409).json({ error: "Email already registered" });
+      }
+
+      const user = userRepo.create({
+        email,
+        role: "student",
+        plainPassword: password,
+      });
+
+      const savedUser = await userRepo.save(user);
+
+      const profile = profileRepo.create({
+        user: savedUser,
+        xp: 0,
+        level: 1,
+      });
+      const savedProfile = await profileRepo.save(profile);
+
+      const secretProd: jwt.Secret = (process.env.JWT_SECRET ?? "dev-secret") as jwt.Secret;
+      const token = jwt.sign(
+        { sub: savedUser.id, email: savedUser.email, role: savedUser.role },
+        secretProd,
+        { expiresIn: (process.env.JWT_EXPIRES_IN ?? "1h") as SignOptions["expiresIn"] } as SignOptions
+      );
+
+      return res.status(201).json({
+        token,
+        user: {
+          id: savedUser.id,
+          email: savedUser.email,
+          role: savedUser.role,
+          profile: savedProfile,
+        },
+      });
+    } catch (err) {
+      console.error("❌ AuthController.register error:", err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+
+  static async me(req: Request, res: Response) {
+    const authed = req as AuthenticatedRequest;
+    if (!authed.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    return res.status(200).json({
+      user: {
+        id: authed.user.id,
+        email: authed.user.email,
+        role: authed.user.role,
+        profile: authed.user.profile ?? null,
+      },
+    });
   }
 }

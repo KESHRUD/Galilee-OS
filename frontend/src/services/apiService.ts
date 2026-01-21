@@ -286,6 +286,26 @@ export const authAPI = {
   },
 
   /**
+   * Register
+   */
+  async register(email: string, password: string): Promise<{ token: string; user: unknown }> {
+    const response = await fetch(`${API_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'Registration failed');
+    }
+
+    const data = await response.json();
+    setAuthToken(data.token);
+    return data;
+  },
+
+  /**
    * Logout
    */
   logout() {
