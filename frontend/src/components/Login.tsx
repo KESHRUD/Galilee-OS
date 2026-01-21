@@ -159,7 +159,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(34,211,238,0.3)] outline-none transition-all placeholder-slate-800 text-sm"
-                                        placeholder={t('password_placeholder') || 'Mot de passe'}
+                                        placeholder="Mot de passe"
                                     />
                                 </div>
 
@@ -225,7 +225,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                                     value={resetNewPassword}
                                     onChange={(e) => setResetNewPassword(e.target.value)}
                                     className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono outline-none transition-all text-sm"
-                                    placeholder={t('password_placeholder') || 'Nouveau mot de passe'}
+                                    placeholder="Nouveau mot de passe"
                                 />
                                 <button
                                     type="submit"
@@ -304,13 +304,13 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                         />
                     </div>
                     <div>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                            placeholder={t('password_placeholder') || 'Mot de passe'}
-                        />
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                placeholder="Mot de passe"
+                            />
                     </div>
                     <button
                         type="submit"
@@ -371,7 +371,7 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                         value={resetNewPassword}
                         onChange={(e) => setResetNewPassword(e.target.value)}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none transition-all"
-                        placeholder={t('password_placeholder') || 'Nouveau mot de passe'}
+                        placeholder="Nouveau mot de passe"
                     />
                     <button
                         type="submit"
