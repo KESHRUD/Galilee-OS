@@ -5,8 +5,10 @@ import { ColumnEntity } from "../entities/Column";
 import { Board } from "../entities/Board";
 import { User } from "../entities/User";
 import type { Column as ColumnDTO, CreateColumnDTO } from "../types";
+import { authMiddleware, type AuthenticatedRequest } from "../middleware/AuthContext";
 
 const router = Router();
+router.use(authMiddleware);
 
 /**
  * In-memory fallback (tests)
@@ -23,7 +25,7 @@ export const columns: ColumnDTO[] = [
  * (fallback: renvoie les colonnes in-memory)
  * (DB: renvoie les colonnes DB, mappées en { id, title, order })
  */
-router.get("/", async (_req: Request, res: Response): Promise<void> => {
+router.get("/", async (req: Request, res: Response): Promise<void> => {
   try {
     if (!AppDataSource.isInitialized) {
       res.json({ data: columns.sort((a, b) => a.order - b.order) });
@@ -31,8 +33,11 @@ router.get("/", async (_req: Request, res: Response): Promise<void> => {
     }
 
     const columnRepo = AppDataSource.getRepository(ColumnEntity);
+    const authed = req as AuthenticatedRequest;
 
     const dbColumns = await columnRepo.find({
+      relations: { board: { owner: true } },
+      where: { board: { owner: { id: authed.user?.id } } },
       order: { position: "ASC" },
     });
 
@@ -78,15 +83,19 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     const boardRepo = AppDataSource.getRepository(Board);
     const userRepo = AppDataSource.getRepository(User);
     const columnRepo = AppDataSource.getRepository(ColumnEntity);
+    const authed = req as AuthenticatedRequest;
 
     let board: Board | null = null;
     if (boardId) {
-      board = await boardRepo.findOne({ where: { id: boardId } });
+      board = await boardRepo.findOne({
+        where: { id: boardId, owner: { id: authed.user?.id } },
+      });
     }
 
     if (!board) {
       // Fallback: use first available board
       const boards = await boardRepo.find({
+        where: { owner: { id: authed.user?.id } },
         order: { createdAt: "ASC" },
         take: 1,
       });
@@ -95,11 +104,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
     if (!board) {
       // Create a default board if none exist
-      const users = await userRepo.find({
-        order: { createdAt: "ASC" },
-        take: 1,
-      });
-      const owner = users[0] ?? null;
+      const owner = authed.user ?? null;
       if (!owner) {
         res.status(400).json({ error: "No users found to create a default board" });
         return;
@@ -152,6 +157,17 @@ router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
     }
 
     const columnRepo = AppDataSource.getRepository(ColumnEntity);
+    const authed = req as AuthenticatedRequest;
+
+    const column = await columnRepo.findOne({
+      where: { id: req.params.id, board: { owner: { id: authed.user?.id } } },
+      relations: { board: { owner: true } },
+    });
+    if (!column) {
+      res.status(404).json({ error: "Column not found" });
+      return;
+    }
+
     const result = await columnRepo.delete({ id: req.params.id });
     if (!result.affected) {
       res.status(404).json({ error: "Column not found" });

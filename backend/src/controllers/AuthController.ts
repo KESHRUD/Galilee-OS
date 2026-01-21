@@ -5,6 +5,8 @@ import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
 import { UserProfile } from "../entities/UserProfile";
 import type { AuthenticatedRequest } from "../middleware/AuthContext";
+import { Board } from "../entities/Board";
+import { ColumnEntity } from "../entities/Column";
 
 export class AuthController {
   static async login(req: Request, res: Response) {
@@ -112,6 +114,19 @@ export class AuthController {
         level: 1,
       });
       const savedProfile = await profileRepo.save(profile);
+
+      // Create a default board + columns for new users
+      const boardRepo = AppDataSource.getRepository(Board);
+      const columnRepo = AppDataSource.getRepository(ColumnEntity);
+      const board = await boardRepo.save(
+        boardRepo.create({ title: "Mon Tableau", owner: savedUser })
+      );
+      const defaultColumns = [
+        columnRepo.create({ title: "To Do", position: 0, board }),
+        columnRepo.create({ title: "In Progress", position: 1, board }),
+        columnRepo.create({ title: "Done", position: 2, board }),
+      ];
+      await columnRepo.save(defaultColumns);
 
       const secretProd: jwt.Secret = (process.env.JWT_SECRET ?? "dev-secret") as jwt.Secret;
       const token = jwt.sign(

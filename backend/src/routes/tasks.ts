@@ -8,9 +8,11 @@ import { ColumnEntity } from "../entities/Column";
 
 import { TaskTag } from "../entities/TaskTag";
 import { Tag } from "../entities/Tag";
+import { authMiddleware, type AuthenticatedRequest } from "../middleware/AuthContext";
 
 
 const router = Router();
+router.use(authMiddleware);
 
 type FrontendTask = {
   id: string;
@@ -70,7 +72,7 @@ const tasks: Task[] = [
 ];
 
 // GET /api/tasks - Get all tasks (DB if available, fallback to in-memory during tests)
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     // If DB isn't initialized (ex: tests), fallback to in-memory
     if (!AppDataSource.isInitialized) {
@@ -78,9 +80,11 @@ router.get("/", async (_req: Request, res: Response) => {
     }
 
     const taskRepo = AppDataSource.getRepository(TaskEntity);
+    const authed = req as AuthenticatedRequest;
 
     const dbTasks = await taskRepo.find({
       relations: { column: true },
+      where: { column: { board: { owner: { id: authed.user?.id } } } },
       order: { createdAt: "ASC" },
     });
 
@@ -111,8 +115,9 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     // ✅ Production: Use database
     const taskRepo = AppDataSource.getRepository(TaskEntity);
     
+    const authed = req as AuthenticatedRequest;
     const task = await taskRepo.findOne({
-      where: { id: req.params.id },
+      where: { id: req.params.id, column: { board: { owner: { id: authed.user?.id } } } },
       relations: { column: true },
     });
 
@@ -155,6 +160,8 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     }
 
     const taskRepo = AppDataSource.getRepository(TaskEntity);
+    const columnRepo = AppDataSource.getRepository(ColumnEntity);
+    const authed = req as AuthenticatedRequest;
 
     //TaskEntity needs a Column (ManyToOne, nullable false)
     //For now, we allow creating a task only if columnId is provided
@@ -164,12 +171,21 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const column = await columnRepo.findOne({
+      where: { id: columnId, board: { owner: { id: authed.user?.id } } },
+      relations: { board: true },
+    });
+    if (!column) {
+      res.status(404).json({ error: "Column not found" });
+      return;
+    }
+
     const created = taskRepo.create({
       title: dto.title,
       description: dto.description,
       completed: false,
       position: 0,
-      column: { id: columnId } as ColumnEntity,
+      column,
     });
 
     const saved = await taskRepo.save(created);
@@ -254,9 +270,11 @@ router.put("/:id", async (req: Request, res: Response): Promise<void> => {
     }
 
     const taskRepo = AppDataSource.getRepository(TaskEntity);
+    const columnRepo = AppDataSource.getRepository(ColumnEntity);
+    const authed = req as AuthenticatedRequest;
 
     const task = await taskRepo.findOne({
-      where: { id: req.params.id },
+      where: { id: req.params.id, column: { board: { owner: { id: authed.user?.id } } } },
       relations: { column: true },
     });
 
@@ -271,7 +289,15 @@ router.put("/:id", async (req: Request, res: Response): Promise<void> => {
     if (typeof dto.completed === "boolean") task.completed = dto.completed;
     if (typeof dto.position === "number") task.position = dto.position;
     if (typeof dto.columnId === "string") {
-      task.column = { id: dto.columnId } as ColumnEntity;
+      const column = await columnRepo.findOne({
+        where: { id: dto.columnId, board: { owner: { id: authed.user?.id } } },
+        relations: { board: true },
+      });
+      if (!column) {
+        res.status(404).json({ error: "Column not found" });
+        return;
+      }
+      task.column = column;
     }
 
     const saved = await taskRepo.save(task);
@@ -310,6 +336,16 @@ router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
     }
 
     const taskRepo = AppDataSource.getRepository(TaskEntity);
+    const authed = req as AuthenticatedRequest;
+
+    const existing = await taskRepo.findOne({
+      where: { id: req.params.id, column: { board: { owner: { id: authed.user?.id } } } },
+      relations: { column: true },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
 
     const result = await taskRepo.delete({ id: req.params.id });
 
