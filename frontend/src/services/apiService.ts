@@ -68,7 +68,8 @@ export const tasksAPI = {
    */
   async getById(id: string, mode: 'pwa' | 'ddaw'): Promise<Task | null> {
     if (mode === 'pwa') {
-      return await db.getTask(id);
+      const allTasks = await db.getAllTasks();
+      return allTasks.find(task => task.id === id) || null;
     } else {
       const response = await fetch(`${API_URL}/api/tasks/${id}`, {
         headers: getHeaders(),
@@ -89,8 +90,13 @@ export const tasksAPI = {
    */
   async create(task: Omit<Task, 'id' | 'createdAt'>, mode: 'pwa' | 'ddaw'): Promise<Task> {
     if (mode === 'pwa') {
-      const id = await db.addTask(task as Task);
-      return { ...task, id, createdAt: Date.now() } as Task;
+      const created: Task = {
+        ...task,
+        id: `t-${Date.now()}`,
+        createdAt: Date.now(),
+      } as Task;
+      await db.saveTask(created);
+      return created;
     } else {
       const response = await fetch(`${API_URL}/api/tasks`, {
         method: 'POST',
@@ -112,9 +118,11 @@ export const tasksAPI = {
    */
   async update(id: string, updates: Partial<Task>, mode: 'pwa' | 'ddaw'): Promise<Task> {
     if (mode === 'pwa') {
-      await db.updateTask(id, updates);
-      const updated = await db.getTask(id);
-      if (!updated) throw new Error('Task not found after update');
+      const allTasks = await db.getAllTasks();
+      const existing = allTasks.find(task => task.id === id);
+      if (!existing) throw new Error('Task not found after update');
+      const updated = { ...existing, ...updates } as Task;
+      await db.saveTask(updated);
       return updated;
     } else {
       const response = await fetch(`${API_URL}/api/tasks/${id}`, {
@@ -183,8 +191,12 @@ export const columnsAPI = {
    */
   async create(column: Omit<ColumnType, 'id'>, mode: 'pwa' | 'ddaw'): Promise<ColumnType> {
     if (mode === 'pwa') {
-      const id = await db.addColumn(column as ColumnType);
-      return { ...column, id } as ColumnType;
+      const created: ColumnType = {
+        ...column,
+        id: `col-${Date.now()}`,
+      } as ColumnType;
+      await db.saveColumn(created);
+      return created;
     } else {
       const response = await fetch(`${API_URL}/api/columns`, {
         method: 'POST',
@@ -206,9 +218,11 @@ export const columnsAPI = {
    */
   async update(id: string, updates: Partial<ColumnType>, mode: 'pwa' | 'ddaw'): Promise<ColumnType> {
     if (mode === 'pwa') {
-      await db.updateColumn(id, updates);
-      const updated = await db.getColumn(id);
-      if (!updated) throw new Error('Column not found after update');
+      const allColumns = await db.getAllColumns();
+      const existing = allColumns.find(column => column.id === id);
+      if (!existing) throw new Error('Column not found after update');
+      const updated = { ...existing, ...updates } as ColumnType;
+      await db.saveColumn(updated);
       return updated;
     } else {
       const response = await fetch(`${API_URL}/api/columns/${id}`, {
@@ -319,17 +333,24 @@ export const syncAPI = {
     const remoteTasks = await tasksAPI.getAll('ddaw');
     const remoteColumns = await columnsAPI.getAll('ddaw');
     
-    // Clear local data
-    await db.clearAll();
+    // Clear local data (tasks + columns)
+    const localTasks = await db.getAllTasks();
+    const localColumns = await db.getAllColumns();
+    for (const task of localTasks) {
+      await db.deleteTask(task.id);
+    }
+    for (const column of localColumns) {
+      await db.deleteColumn(column.id);
+    }
     
     // Download columns
     for (const column of remoteColumns) {
-      await db.addColumn(column);
+      await db.saveColumn(column);
     }
     
     // Download tasks
     for (const task of remoteTasks) {
-      await db.addTask(task);
+      await db.saveTask(task);
     }
   },
 };
