@@ -7,12 +7,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(() => authService.getCurrentUser());
   const [loading] = useState(false);
 
-  const login = async (username: string, provider: 'google' | 'local' = 'local', speciality?: Speciality) => {
-    const user = await authService.login(username, provider, speciality);
+  const login = async (email: string, password: string) => {
+    const user = await authService.login(email, password);
     setUser(user);
   };
 
-  const register = async (data: { username: string; email: string; speciality: Speciality }) => {
+  const register = async (data: { email: string; password: string; speciality: Speciality }) => {
       const user = await authService.register(data);
       setUser(user);
   }

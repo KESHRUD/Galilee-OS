@@ -24,21 +24,21 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
   const { theme, t } = useTheme();
   
   const [isRegister, setIsRegister] = useState(false);
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [speciality, setSpeciality] = useState<Speciality>('prepa');
   
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username) return;
+    if (!email || !password) return;
     setIsLoading(true);
 
     if (isRegister) {
-        await register({ username, email, speciality });
+        await register({ email, password, speciality });
     } else {
-        await login(username, 'local');
+        await login(email, password);
     }
     
     setIsLoading(false);
@@ -110,25 +110,23 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
                             <input
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(34,211,238,0.3)] outline-none transition-all placeholder-slate-800 text-sm"
-                                placeholder={t('login_id_placeholder')}
+                                placeholder={t('email_placeholder')}
                             />
                         </div>
-                        
-                        {isRegister && (
-                            <div className="animate-fade-in-up">
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(34,211,238,0.3)] outline-none transition-all placeholder-slate-800 text-sm"
-                                    placeholder={t('email_placeholder')}
-                                />
-                            </div>
-                        )}
+
+                        <div className="animate-fade-in-up">
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-700 text-cyan-100 p-3 font-mono focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(34,211,238,0.3)] outline-none transition-all placeholder-slate-800 text-sm"
+                                placeholder={t('password_placeholder') || 'Mot de passe'}
+                            />
+                        </div>
 
                         <button
                             type="submit"
@@ -199,24 +197,22 @@ export const Login: React.FC<LoginProps> = ({ onBack }) => {
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div>
                 <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                    placeholder={t('login_id_placeholder')}
+                    placeholder={t('email_placeholder')}
                 />
             </div>
-            {isRegister && (
-                <div>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                        placeholder={t('email_placeholder')}
-                    />
-                </div>
-            )}
+            <div>
+                <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    placeholder={t('password_placeholder') || 'Mot de passe'}
+                />
+            </div>
             <button
                 type="submit"
                 disabled={isLoading}
