@@ -97,10 +97,11 @@ export class AuthController {
         return res.status(409).json({ error: "Email already registered" });
       }
 
+      const passwordHash = await bcrypt.hash(password, 10);
       const user = userRepo.create({
         email,
         role: "student",
-        plainPassword: password,
+        passwordHash,
       });
 
       const savedUser = await userRepo.save(user);
