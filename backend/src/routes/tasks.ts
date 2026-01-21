@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { AppDataSource } from "../config/data-source";
 import { Task as TaskEntity } from "../entities/Task";
+import { Column } from "../entities/Column";
 
 import { TaskTag } from "../entities/TaskTag";
 import { Tag } from "../entities/Tag";
@@ -133,7 +134,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       description: dto.description,
       completed: false,
       position: 0,
-      column: { id: columnId } as any,
+      column: { id: columnId } as Column,
     });
 
     const saved = await taskRepo.save(created);
@@ -171,8 +172,8 @@ router.post("/:id/tags", async (req: Request, res: Response): Promise<void> => {
     }
 
     const taskTag = taskTagRepo.create({
-      task: { id: req.params.id } as any,
-      tag: { id: tagId } as any,
+      task: { id: req.params.id } as TaskEntity,
+      tag: { id: tagId } as Tag,
     });
 
 
@@ -187,7 +188,7 @@ router.post("/:id/tags", async (req: Request, res: Response): Promise<void> => {
 
 // PUT /api/tasks/:id - Update task (DB if available, fallback to in-memory during tests)
 router.put("/:id", async (req: Request, res: Response): Promise<void> => {
-  const dto: UpdateTaskDTO = req.body;
+  const dto: UpdateTaskDTO & { completed?: boolean; position?: number } = req.body;
 
   try {
     // Fallback if DB not initialized (tests)
@@ -221,10 +222,10 @@ router.put("/:id", async (req: Request, res: Response): Promise<void> => {
     }
 
     // Update allowed fields
-    if (typeof (dto as any).title === "string") task.title = (dto as any).title;
-    if (typeof (dto as any).description === "string") task.description = (dto as any).description;
-    if (typeof (dto as any).completed === "boolean") task.completed = (dto as any).completed;
-    if (typeof (dto as any).position === "number") task.position = (dto as any).position;
+    if (typeof dto.title === "string") task.title = dto.title;
+    if (typeof dto.description === "string") task.description = dto.description;
+    if (typeof dto.completed === "boolean") task.completed = dto.completed;
+    if (typeof dto.position === "number") task.position = dto.position;
 
     const saved = await taskRepo.save(task);
 

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import type { Board as BoardDTO } from "../types";
 import { Board } from "../entities/Board";
-import { authMiddleware } from "../middleware/AuthContext";
+import { authMiddleware, type AuthenticatedRequest } from "../middleware/AuthContext";
 import { v4 as uuidv4 } from "uuid";
 import { BoardController } from "../controllers/BoardController";
 import { AppDataSource } from "../config/data-source";
@@ -52,7 +52,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     }
 
     // ✅ FIX : Récupérer le owner depuis le JWT (via authMiddleware)
-    const authenticatedReq = req as any; // AuthenticatedRequest
+    const authenticatedReq = req as AuthenticatedRequest;
     const userId = authenticatedReq.user?.id;
 
     if (!userId) {
@@ -64,7 +64,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
     const board = boardRepo.create({
       title,
-      owner: { id: userId } as any, // ✅ Assigner le owner
+      owner: { id: userId } as User, // ✅ Assigner le owner
     });
 
     const saved = await boardRepo.save(board);
@@ -105,8 +105,8 @@ router.post("/:id/members", async (req: Request, res: Response): Promise<void> =
 
     const boardMember = boardMemberRepo.create({
       role,
-      board: { id: req.params.id } as any,
-      user: { id: userId } as any,
+      board: { id: req.params.id } as Board,
+      user: { id: userId } as User,
     });
 
 

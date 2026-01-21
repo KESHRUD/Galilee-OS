@@ -28,7 +28,10 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.10",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
@@ -47,11 +50,8 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",
-    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.5",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.1",
     "@types/supertest": "^6.0.3",
     "@types/uuid": "^10.0.0",
