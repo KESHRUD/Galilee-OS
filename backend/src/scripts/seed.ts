@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import "dotenv/config";
 import bcrypt from "bcrypt";
+import { In } from "typeorm";
 import { AppDataSource } from "../config/data-source";
 import { User } from "../entities/User";
 import { UserProfile } from "../entities/UserProfile";
@@ -39,6 +40,18 @@ async function seed() {
   const tagRepo = AppDataSource.getRepository(Tag);
   const boardMemberRepo = AppDataSource.getRepository(BoardMember);
   const taskTagRepo = AppDataSource.getRepository(TaskTag);
+
+  const seedEmails = [
+    "admin@galilee.com",
+    "sarah.kafiz@galilee.com",
+    "mouenis.amira@galilee.com",
+  ];
+  const existingUsers = await userRepo.find({ where: { email: In(seedEmails) } });
+  if (existingUsers.length > 0) {
+    console.log("⚠️ Seed skipped: users already exist.");
+    await AppDataSource.destroy();
+    return;
+  }
 
   // ================================================================
   // 1. 👥 USERS (3 users avec mots de passe hashés manuellement)
