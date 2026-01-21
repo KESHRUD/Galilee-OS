@@ -1,4 +1,5 @@
 // Vitest global setup for backend tests
+import 'reflect-metadata'; // ✅ FIX: Import nécessaire pour TypeORM
 import { afterAll, beforeAll } from 'vitest';
 import app from '@app/index';
 import request from 'supertest';

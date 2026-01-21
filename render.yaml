@@ -1,0 +1,76 @@
+services:
+  # ============================================================================
+  # Backend Web Service
+  # ============================================================================
+  - type: web
+    name: galilee-os-backend
+    env: node
+    region: frankfurt
+    plan: free
+    
+    # Build configuration
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
+    
+    # Health check
+    healthCheckPath: /api/health
+    
+    # Environment variables
+    envVars:
+      - key: NODE_ENV
+        value: production
+      
+      - key: PORT
+        value: 3000
+      
+      - key: CORS_ORIGIN
+        value: https://galilee-os.netlify.app
+      
+      # Database connection (from Render PostgreSQL)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: galilee-os-db
+          property: connectionString
+      
+      # Parse DATABASE_URL into individual vars (pour TypeORM)
+      - key: DB_HOST
+        fromDatabase:
+          name: galilee-os-db
+          property: host
+      
+      - key: DB_PORT
+        fromDatabase:
+          name: galilee-os-db
+          property: port
+      
+      - key: DB_USER
+        fromDatabase:
+          name: galilee-os-db
+          property: user
+      
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: galilee-os-db
+          property: password
+      
+      - key: DB_NAME
+        fromDatabase:
+          name: galilee-os-db
+          property: database
+      
+      # JWT Secret (généré automatiquement par Render)
+      - key: JWT_SECRET
+        generateValue: true
+      
+      - key: JWT_EXPIRES_IN
+        value: 7d
+
+# ============================================================================
+# Databases
+# ============================================================================
+databases:
+  - name: galilee-os-db
+    databaseName: galilee_os
+    user: galilee_admin
+    region: frankfurt
+    plan: free
