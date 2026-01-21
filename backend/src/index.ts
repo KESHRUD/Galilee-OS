@@ -21,9 +21,35 @@ const PORT = Number(process.env.PORT) || 3000;
  * ============================================================================
  */
 app.use(helmet());
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://galilee-os.netlify.app',
+];
+const envOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = new Set([...defaultAllowedOrigins, ...envOrigins]);
+const netlifyPreviewRegex = /^https:\/\/[a-z0-9-]+--galilee-os\.netlify\.app$/i;
+const netlifyAppRegex = /^https:\/\/[a-z0-9-]+\.netlify\.app$/i;
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin(origin, callback) {
+      if (!origin) {
+        // Allow non-browser requests (e.g. curl, health checks)
+        return callback(null, true);
+      }
+      if (
+        allowedOrigins.has(origin) ||
+        netlifyPreviewRegex.test(origin) ||
+        netlifyAppRegex.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
