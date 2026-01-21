@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { ModeProvider } from './contexts/ModeContext'
 
 // Enable MSW in development mode
 async function enableMocking() {
@@ -19,7 +20,9 @@ async function enableMocking() {
 enableMocking().then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <App />
+      <ModeProvider>
+        <App />
+      </ModeProvider>
     </StrictMode>,
   );
 });

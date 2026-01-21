@@ -35,6 +35,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onDragStart, onEdit, o
   const totalSubtasks = task.subtasks?.length || 0;
   const progress = totalSubtasks === 0 ? 0 : (completedSubtasks / totalSubtasks) * 100;
   
+  // eslint-disable-next-line react-hooks/purity
   const isOverdue = task.dueDate && Date.now() > task.dueDate;
   const hasDueDate = !!task.dueDate;
 

@@ -1,19 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { User, Speciality } from '../types';
 import { authService } from '../services/auth';
 import { AuthContext } from '../contexts/AuthContext';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const storedUser = authService.getCurrentUser();
-    if (storedUser) {
-      setUser(storedUser);
-    }
-    setLoading(false);
-  }, []);
+  const [user, setUser] = useState<User | null>(() => authService.getCurrentUser());
+  const [loading] = useState(false);
 
   const login = async (username: string, provider: 'google' | 'local' = 'local', speciality?: Speciality) => {
     const user = await authService.login(username, provider, speciality);
