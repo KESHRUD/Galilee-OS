@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "uuid";
 import { AppDataSource } from "../config/data-source";
 import { ColumnEntity } from "../entities/Column";
 import { Board } from "../entities/Board";
-import { User } from "../entities/User";
 import type { Column as ColumnDTO, CreateColumnDTO } from "../types";
 import { authMiddleware, type AuthenticatedRequest } from "../middleware/AuthContext";
 
@@ -81,7 +80,6 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     }
 
     const boardRepo = AppDataSource.getRepository(Board);
-    const userRepo = AppDataSource.getRepository(User);
     const columnRepo = AppDataSource.getRepository(ColumnEntity);
     const authed = req as AuthenticatedRequest;
 
