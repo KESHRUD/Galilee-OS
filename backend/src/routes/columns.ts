@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { AppDataSource } from "../config/data-source";
 import { ColumnEntity } from "../entities/Column";
 import { Board } from "../entities/Board";
+import { User } from "../entities/User";
 import type { Column as ColumnDTO, CreateColumnDTO } from "../types";
 
 const router = Router();
@@ -60,11 +61,6 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  if (!boardId) {
-    res.status(400).json({ error: "boardId is required (query param ?boardId=...)" });
-    return;
-  }
-
   try {
     // Fallback tests
     if (!AppDataSource.isInitialized) {
@@ -80,12 +76,29 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
     }
 
     const boardRepo = AppDataSource.getRepository(Board);
+    const userRepo = AppDataSource.getRepository(User);
     const columnRepo = AppDataSource.getRepository(ColumnEntity);
 
-    const board = await boardRepo.findOne({ where: { id: boardId } });
+    let board: Board | null = null;
+    if (boardId) {
+      board = await boardRepo.findOne({ where: { id: boardId } });
+    }
+
     if (!board) {
-      res.status(404).json({ error: "Board not found" });
-      return;
+      // Fallback: use first available board
+      board = await boardRepo.findOne({ order: { createdAt: "ASC" } });
+    }
+
+    if (!board) {
+      // Create a default board if none exist
+      const owner = await userRepo.findOne({ order: { createdAt: "ASC" } });
+      if (!owner) {
+        res.status(400).json({ error: "No users found to create a default board" });
+        return;
+      }
+      board = await boardRepo.save(
+        boardRepo.create({ title: "Default Board", owner })
+      );
     }
 
     const position = typeof dto.order === "number" ? dto.order : 0;
