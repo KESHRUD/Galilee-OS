@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import type { Column as ColumnType, Task, ViewMode } from './types';
+import type { Task, ViewMode } from './types';
 import { db } from './services/storage';
 import { Column } from './components/Column';
 import { EditModal } from './components/EditModal';
@@ -30,8 +30,8 @@ const Dashboard = () => {
   const [view, setView] = useState<ViewMode>('board');
   
   // Dual Mode API - Hooks pour PWA/DDAW
-  const { tasks, loading: tasksLoading, createTask: createTaskAPI, updateTask: updateTaskAPI, deleteTask: deleteTaskAPI, refresh: refreshTasks } = useTasks();
-  const { columns, loading: columnsLoading, createColumn: createColumnAPI, updateColumn: updateColumnAPI, deleteColumn: deleteColumnAPI } = useColumns();
+  const { tasks, createTask: createTaskAPI, updateTask: updateTaskAPI, deleteTask: deleteTaskAPI, refresh: refreshTasks } = useTasks();
+  const { columns, createColumn: createColumnAPI, deleteColumn: deleteColumnAPI } = useColumns();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -375,11 +375,7 @@ const Dashboard = () => {
 
 const AppContent = () => {
   const { isAuthenticated } = useAuth();
-  const [showLanding, setShowLanding] = useState(!isAuthenticated);
-
-  useEffect(() => {
-      if (isAuthenticated) setShowLanding(false);
-  }, [isAuthenticated]);
+  const [showLanding, setShowLanding] = useState(true);
 
   if (isAuthenticated) return <Dashboard />;
   if (showLanding) return <LandingPage onStart={() => setShowLanding(false)} />;
