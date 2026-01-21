@@ -1,102 +1,98 @@
 import { useState, useEffect, useCallback } from 'react';
+import { tasksAPI } from '../services/apiService';
+import { useMode } from '../contexts/ModeContext';
 import type { Task } from '../types';
-import { apiService } from '../services/api';
-import { dbService } from '../services/db';
-import { useOnlineStatus } from './useOnlineStatus';
+
+/**
+ * ============================================================================
+ * useTasks - Hook pour gérer les tâches en dual mode
+ * ============================================================================
+ * 
+ * Switche automatiquement entre IndexedDB (PWA) et Backend API (DDAW)
+ */
 
 export const useTasks = () => {
+  const { mode } = useMode();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const isOnline = useOnlineStatus();
 
+  /**
+   * Charger toutes les tâches
+   */
   const loadTasks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-
-      if (isOnline) {
-        // Fetch from API
-        const tasksFromApi = await apiService.getTasks();
-        setTasks(tasksFromApi);
-        // Save to IndexedDB
-        await dbService.saveTasks(tasksFromApi);
-      } else {
-        // Load from IndexedDB
-        const tasksFromDb = await dbService.getAllTasks();
-        setTasks(tasksFromDb);
-      }
+      const allTasks = await tasksAPI.getAll(mode);
+      setTasks(allTasks);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tasks');
-      // Fallback to IndexedDB on error
-      const tasksFromDb = await dbService.getAllTasks();
-      setTasks(tasksFromDb);
+      console.error('Error loading tasks:', err);
     } finally {
       setLoading(false);
     }
-  }, [isOnline]);
+  }, [mode]);
 
+  /**
+   * Créer une nouvelle tâche
+   */
+  const createTask = useCallback(
+    async (task: Omit<Task, 'id' | 'createdAt'>) => {
+      try {
+        const created = await tasksAPI.create(task, mode);
+        setTasks((prev) => [...prev, created]);
+        return created;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to create task');
+        console.error('Error creating task:', err);
+        throw err;
+      }
+    },
+    [mode]
+  );
+
+  /**
+   * Mettre à jour une tâche
+   */
+  const updateTask = useCallback(
+    async (id: string, updates: Partial<Task>) => {
+      try {
+        const updated = await tasksAPI.update(id, updates, mode);
+        setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+        return updated;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to update task');
+        console.error('Error updating task:', err);
+        throw err;
+      }
+    },
+    [mode]
+  );
+
+  /**
+   * Supprimer une tâche
+   */
+  const deleteTask = useCallback(
+    async (id: string) => {
+      try {
+        await tasksAPI.delete(id, mode);
+        setTasks((prev) => prev.filter((t) => t.id !== id));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to delete task');
+        console.error('Error deleting task:', err);
+        throw err;
+      }
+    },
+    [mode]
+  );
+
+  /**
+   * Charger les tâches au montage et quand le mode change
+   */
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
-
-  const createTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      if (isOnline) {
-        const newTask = await apiService.createTask(taskData);
-        setTasks((prev) => [...prev, newTask]);
-        await dbService.saveTask(newTask);
-      } else {
-        // Create offline task
-        const tempTask: Task = {
-          id: `temp-${Date.now()}`,
-          ...taskData,
-          createdAt: Date.now(),
-        };
-        setTasks((prev) => [...prev, tempTask]);
-        await dbService.saveTask(tempTask);
-        await dbService.addPendingSync({ action: 'create', data: tempTask });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create task');
-    }
-  };
-
-  const updateTask = async (id: string, updates: Partial<Task>) => {
-    try {
-      if (isOnline) {
-        const updatedTask = await apiService.updateTask(id, updates);
-        setTasks((prev) => prev.map((t) => (t.id === id ? updatedTask : t)));
-        await dbService.saveTask(updatedTask);
-      } else {
-        const updatedTask: Task = {
-          ...tasks.find((t) => t.id === id)!,
-          ...updates,
-        };
-        setTasks((prev) => prev.map((t) => (t.id === id ? updatedTask : t)));
-        await dbService.saveTask(updatedTask);
-        await dbService.addPendingSync({ action: 'update', taskId: id, data: updates });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update task');
-    }
-  };
-
-  const deleteTask = async (id: string) => {
-    try {
-      if (isOnline) {
-        await apiService.deleteTask(id);
-        setTasks((prev) => prev.filter((t) => t.id !== id));
-        await dbService.deleteTask(id);
-      } else {
-        setTasks((prev) => prev.filter((t) => t.id !== id));
-        await dbService.deleteTask(id);
-        await dbService.addPendingSync({ action: 'delete', taskId: id });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete task');
-    }
-  };
 
   return {
     tasks,
@@ -105,6 +101,6 @@ export const useTasks = () => {
     createTask,
     updateTask,
     deleteTask,
-    refreshTasks: loadTasks,
+    refresh: loadTasks,
   };
 };

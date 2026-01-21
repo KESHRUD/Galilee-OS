@@ -17,16 +17,22 @@ import { CommandPalette } from './components/CommandPalette';
 import { audioManager } from './services/audioService';
 import { Search, Wifi, WifiOff, Box, Settings, LogOut, PlusCircle, Layout, Brain, Volume2, VolumeX, Languages, X, Check } from 'lucide-react';
 import { Logo } from './components/Logo';
+import { ModeToggle } from './components/ModeToggle';
+import { useTasks } from './hooks/useTasks';
+import { useColumns } from './hooks/useColumns';
+import { useMode } from './contexts/ModeContext';
 import './index.css';
 
 const Dashboard = () => {
   const { theme, toggleTheme, language, setLanguage, t } = useTheme();
   const { user, logout, updateUserXp } = useAuth();
+  const { mode } = useMode();
   const [view, setView] = useState<ViewMode>('board');
   
-  // Kanban State
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [columns, setColumns] = useState<ColumnType[]>([]);
+  // Dual Mode API - Hooks pour PWA/DDAW
+  const { tasks, loading: tasksLoading, createTask: createTaskAPI, updateTask: updateTaskAPI, deleteTask: deleteTaskAPI, refresh: refreshTasks } = useTasks();
+  const { columns, loading: columnsLoading, createColumn: createColumnAPI, updateColumn: updateColumnAPI, deleteColumn: deleteColumnAPI } = useColumns();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isMuted, setIsMuted] = useState(false);
@@ -43,16 +49,18 @@ const Dashboard = () => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [targetColumnId, setTargetColumnId] = useState<string>('todo');
 
+  // Seed IndexedDB au premier lancement (mode PWA uniquement)
   useEffect(() => {
-    const loadData = async () => {
+    const seedData = async () => {
+      if (mode === 'pwa') {
         await db.seedIfNeeded();
-        const loadedColumns = await db.getAllColumns();
-        const loadedTasks = await db.getAllTasks();
-        setColumns(loadedColumns);
-        setTasks(loadedTasks);
+        refreshTasks();
+      }
     };
-    loadData();
+    seedData();
+  }, [mode, refreshTasks]);
 
+  useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
     window.addEventListener('online', handleOnline);
@@ -90,69 +98,58 @@ const Dashboard = () => {
     if (!dragged) return;
 
     if (dragged.columnId !== targetColumnId) {
-        const updatedTasks = tasks.map(t => {
-            if (t.id === dragged.id) {
-                return { ...t, columnId: targetColumnId };
-            }
-            return t;
-        });
-        setTasks(updatedTasks);
+      try {
+        await updateTaskAPI(dragged.id, { columnId: targetColumnId });
         
-        const taskToUpdate = updatedTasks.find(t => t.id === dragged.id);
-        if (taskToUpdate) {
-            await db.saveTask(taskToUpdate);
-            
-            if (targetColumnId === 'done' && dragged.columnId !== 'done') {
-                updateUserXp(50);
-                audioManager.play('success', theme);
-            } else {
-                audioManager.play('success', theme);
-            }
+        // XP bonus si tâche complétée
+        if (targetColumnId === 'done' && dragged.columnId !== 'done') {
+          updateUserXp(50);
         }
+        audioManager.play('success', theme);
+      } catch (error) {
+        console.error('Error moving task:', error);
+        audioManager.play('error', theme);
+      }
     }
     dragItem.current = null;
   };
 
   // --- Task Management ---
   const handleSaveTask = async (taskData: Partial<Task>) => {
-    let newTask: Task;
-    let isNew = false;
-    
-    if (taskData.id) {
-        const existing = tasks.find(t => t.id === taskData.id)!;
-        newTask = { ...existing, ...taskData } as Task;
-    } else {
-        isNew = true;
-        newTask = {
-            id: `t-${Date.now()}`,
-            title: taskData.title || t('new_protocol'),
-            description: taskData.description || '',
-            priority: taskData.priority || 'medium',
-            tags: taskData.tags || [],
-            columnId: taskData.columnId || columns[0]?.id || 'todo',
-            createdAt: Date.now(),
-            subtasks: taskData.subtasks || [],
-            comments: taskData.comments || [],
-            dueDate: taskData.dueDate
+    try {
+      if (taskData.id) {
+        // Mise à jour d'une tâche existante
+        await updateTaskAPI(taskData.id, taskData);
+      } else {
+        // Création d'une nouvelle tâche
+        const newTask = {
+          title: taskData.title || t('new_protocol'),
+          description: taskData.description || '',
+          priority: taskData.priority || 'medium',
+          tags: taskData.tags || [],
+          columnId: taskData.columnId || columns[0]?.id || 'todo',
+          subtasks: taskData.subtasks || [],
+          comments: taskData.comments || [],
+          dueDate: taskData.dueDate
         };
-    }
-
-    await db.saveTask(newTask);
-    
-    if (isNew) {
-        setTasks(prev => [...prev, newTask]);
+        await createTaskAPI(newTask);
         updateUserXp(10);
-    } else {
-        setTasks(prev => prev.map(t => t.id === newTask.id ? newTask : t));
+      }
+      audioManager.play('success', theme);
+    } catch (error) {
+      console.error('Error saving task:', error);
+      audioManager.play('error', theme);
     }
-    audioManager.play('success', theme);
   };
 
   const handleDeleteTask = async (id: string) => {
     if (confirm(t('confirm_action'))) {
-        await db.deleteTask(id);
-        setTasks(prev => prev.filter(t => t.id !== id));
+      try {
+        await deleteTaskAPI(id);
         audioManager.play('error', theme);
+      } catch (error) {
+        console.error('Error deleting task:', error);
+      }
     }
   };
 
@@ -170,28 +167,39 @@ const Dashboard = () => {
   };
 
   const handleAddColumn = async () => {
-      if (!newColumnTitle.trim()) return;
-
+    if (!newColumnTitle.trim()) return;
+    try {
       const maxOrder = columns.length > 0 ? Math.max(...columns.map(c => c.order)) : -1;
-      const newCol: ColumnType = {
-          id: `col-${Date.now()}`,
-          title: newColumnTitle.trim(),
-          order: maxOrder + 1
+      
+      const newCol = {
+        title: newColumnTitle.trim(),
+        order: maxOrder + 1
       };
 
-      await db.saveColumn(newCol);
-      setColumns(prev => [...prev, newCol]);
+      await createColumnAPI(newCol);
       setNewColumnTitle('');
       setIsAddingColumn(false);
       audioManager.play('success', theme);
+    } catch (error) {
+      console.error('Error creating column:', error);
+      audioManager.play('error', theme);
+    }
   };
 
   const handleDeleteColumn = async (columnId: string) => {
-      await db.deleteColumn(columnId);
-      setColumns(prev => prev.filter(c => c.id !== columnId));
+    try {
+      // Supprimer toutes les tâches de cette colonne d'abord
       const tasksToRemove = tasks.filter(t => t.columnId === columnId);
-      tasksToRemove.forEach(async t => await db.deleteTask(t.id));
-      setTasks(prev => prev.filter(t => t.columnId !== columnId));
+      for (const task of tasksToRemove) {
+        await deleteTaskAPI(task.id);
+      }
+      
+      // Puis supprimer la colonne
+      await deleteColumnAPI(columnId);
+      audioManager.play('error', theme);
+    } catch (error) {
+      console.error('Error deleting column:', error);
+    }
   };
 
   const filteredTasks = tasks.filter(t => 
@@ -242,6 +250,11 @@ const Dashboard = () => {
         </div>
 
         <div className="flex items-center gap-4">
+            {/* Mode Toggle PWA/DDAW */}
+            <ModeToggle />
+            
+            <div className="h-6 w-px bg-slate-500/20 mx-1"></div>
+            
             <div className={`status-indicator flex items-center gap-3 text-[10px] ${isGalilee ? 'text-cyan-600 font-mono' : 'text-slate-500'}`}>
                 {isOnline ? <Wifi size={10} className={isGalilee ? "text-cyan-400" : "text-green-500"}/> : <WifiOff size={10} className="text-red-500"/>}
                 <span className="hidden md:inline">{isOnline ? t('status_online') : t('status_offline')}</span>
