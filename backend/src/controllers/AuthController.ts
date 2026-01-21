@@ -223,45 +223,7 @@ export class AuthController {
         user.resetPasswordExpiresAt = new Date(Date.now() + 1000 * 60 * 60);
         await userRepo.save(user);
 
-        const resendKey = process.env.RESEND_API_KEY;
-        const resendFrom = process.env.RESEND_FROM_EMAIL || "no-reply@galilee-os.netlify.app";
-
-        if (resendKey) {
-          const resetUrl =
-            process.env.RESET_PASSWORD_URL || "https://galilee-os.netlify.app";
-
-          const response = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${resendKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              from: resendFrom,
-              to: [email],
-              subject: "Galilée OS - Réinitialisation du mot de passe",
-              text: `Votre token: ${resetToken}\n\nUtilisez-le pour réinitialiser votre mot de passe.`,
-              html: `<p>Bonjour,</p>
-                    <p>Voici votre token de réinitialisation:</p>
-                    <p><b>${resetToken}</b></p>
-                    <p>Vous pouvez le saisir dans le formulaire de l'application.</p>
-                    <p>Retour app: <a href="${resetUrl}">${resetUrl}</a></p>`,
-            }),
-          });
-
-          if (!response.ok) {
-            const body = await response.text();
-            console.error("❌ Resend error:", body);
-          }
-        }
-
-        if (
-          process.env.NODE_ENV !== "production" ||
-          process.env.EXPOSE_RESET_TOKEN === "true" ||
-          !resendKey
-        ) {
-          return res.status(200).json({ message: "Reset token generated", resetToken });
-        }
+        return res.status(200).json({ message: "Reset token generated", resetToken });
       }
 
       return res.status(200).json({ message: "If an account exists, a reset email was sent" });
