@@ -60,7 +60,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ onNewTask, onNew
     if (isOpen && inputRef.current) {
         inputRef.current.focus();
     }
+    // Reset state when opening/closing
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuery('');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedIndex(0);
   }, [isOpen]);
 

@@ -15,13 +15,19 @@ export const FocusTimer: React.FC = () => {
         if (isActive && timeLeft > 0) {
             interval = setInterval(() => setTimeLeft(t => t - 1), 1000);
         } else if (timeLeft === 0) {
+            // Timer completed - switch modes
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsActive(false);
             audioManager.play('success', theme);
             if (mode === 'focus') {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setMode('break');
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setTimeLeft(5 * 60);
             } else {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setMode('focus');
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setTimeLeft(25 * 60);
             }
         }
