@@ -86,6 +86,7 @@ export const ModeProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useMode = () => {
   const context = useContext(ModeContext);
   if (!context) {
