@@ -86,12 +86,20 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
 
     if (!board) {
       // Fallback: use first available board
-      board = await boardRepo.findOne({ order: { createdAt: "ASC" } });
+      const boards = await boardRepo.find({
+        order: { createdAt: "ASC" },
+        take: 1,
+      });
+      board = boards[0] ?? null;
     }
 
     if (!board) {
       // Create a default board if none exist
-      const owner = await userRepo.findOne({ order: { createdAt: "ASC" } });
+      const users = await userRepo.find({
+        order: { createdAt: "ASC" },
+        take: 1,
+      });
+      const owner = users[0] ?? null;
       if (!owner) {
         res.status(400).json({ error: "No users found to create a default board" });
         return;
