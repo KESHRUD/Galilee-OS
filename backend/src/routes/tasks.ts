@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { AppDataSource } from "../config/data-source";
 import { Task as TaskEntity } from "../entities/Task";
-import { Column } from "../entities/Column";
+import { ColumnEntity } from "../entities/Column";
 
 import { TaskTag } from "../entities/TaskTag";
 import { Tag } from "../entities/Tag";
@@ -134,7 +134,7 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       description: dto.description,
       completed: false,
       position: 0,
-      column: { id: columnId } as Column,
+      column: { id: columnId } as ColumnEntity,
     });
 
     const saved = await taskRepo.save(created);
