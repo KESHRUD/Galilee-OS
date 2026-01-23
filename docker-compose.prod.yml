@@ -1,0 +1,113 @@
+# ============================================================================
+# Docker Compose - Production Configuration
+# Uses pre-built images from Docker Hub
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # Backend Service - Express API
+  # ==========================================================================
+  backend:
+    # ✅ Pull from Docker Hub instead of building
+    image: ${DOCKER_USERNAME:-mouenis}/galilee-os-backend:${VERSION:-latest}
+    container_name: kanban-backend
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    
+    depends_on:
+      - postgres
+    
+    # ✅ Variables depuis .env (pas de secrets hardcodés)
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3000}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
+      - DB_HOST=${DB_HOST:-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-galilee_admin}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-galilee_os}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1h}
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    
+    networks:
+      - kanban-network
+
+  # ==========================================================================
+  # Frontend Service - React PWA with Nginx
+  # ==========================================================================
+  frontend:
+    # ✅ Pull from Docker Hub instead of building
+    image: ${DOCKER_USERNAME:-mouenis}/galilee-os-frontend:${VERSION:-latest}
+    container_name: kanban-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    
+    depends_on:
+      backend:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    
+    networks:
+      - kanban-network
+
+  # ==========================================================================
+  # Database Service - PostgreSQL
+  # ==========================================================================
+  postgres:
+    image: postgres:15
+    container_name: kanban-postgres
+    restart: unless-stopped
+    
+    # ✅ Credentials depuis .env
+    environment:
+      - POSTGRES_USER=${DB_USER:-galilee_admin}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME:-galilee_os}
+    
+    ports:
+      - "${POSTGRES_PORT_EXTERNAL:-5433}:5432"
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U galilee_admin -d galilee_os"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+    networks:
+      - kanban-network
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  kanban-network:
+    driver: bridge
+    name: kanban-network
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  kanban-data:
+    name: kanban-data
+  postgres_data:
+    name: postgres_data

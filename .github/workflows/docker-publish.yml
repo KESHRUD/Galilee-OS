@@ -1,0 +1,82 @@
+name: Docker Publish to Hub
+
+# Publish to Docker Hub when a tag is created (e.g., v1.0.0)
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  DOCKER_USERNAME: mouenis  # Replace with your Docker Hub username
+
+jobs:
+  publish:
+    name: Build and Push to Docker Hub
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.backend
+          push: true
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/galilee-os-backend:${{ steps.version.outputs.VERSION }}
+            ${{ env.DOCKER_USERNAME }}/galilee-os-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.frontend
+          push: true
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/galilee-os-frontend:${{ steps.version.outputs.VERSION }}
+            ${{ env.DOCKER_USERNAME }}/galilee-os-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ steps.version.outputs.VERSION }}
+          body: |
+            ## 🐳 Docker Images Published
+            
+            **Backend:** `${{ env.DOCKER_USERNAME }}/galilee-os-backend:${{ steps.version.outputs.VERSION }}`
+            **Frontend:** `${{ env.DOCKER_USERNAME }}/galilee-os-frontend:${{ steps.version.outputs.VERSION }}`
+            
+            ### Pull images:
+            ```bash
+            docker pull ${{ env.DOCKER_USERNAME }}/galilee-os-backend:${{ steps.version.outputs.VERSION }}
+            docker pull ${{ env.DOCKER_USERNAME }}/galilee-os-frontend:${{ steps.version.outputs.VERSION }}
+            ```
+            
+            ### Deploy with docker-compose:
+            ```bash
+            VERSION=${{ steps.version.outputs.VERSION }} docker-compose -f docker-compose.prod.yml up -d
+            ```
+          draft: false
+          prerelease: false

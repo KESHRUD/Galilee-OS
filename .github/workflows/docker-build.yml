@@ -1,0 +1,48 @@
+name: Docker Build
+
+# Build Docker images on push to main/develop
+on:
+  push:
+    branches: [ main, develop ]
+
+env:
+  DOCKER_USERNAME: mouenis  # Replace with your Docker Hub username
+
+jobs:
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.backend
+          push: false
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/galilee-os-backend:${{ github.sha }}
+            ${{ env.DOCKER_USERNAME }}/galilee-os-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.frontend
+          push: false
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/galilee-os-frontend:${{ github.sha }}
+            ${{ env.DOCKER_USERNAME }}/galilee-os-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Show image sizes
+        run: docker images | grep galilee-os
