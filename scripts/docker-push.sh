@@ -27,13 +27,15 @@ echo ""
 
 # Check if logged in to Docker Hub
 echo -e "${YELLOW}Checking Docker Hub authentication...${NC}"
-if ! docker info | grep -q "Username"; then
-  echo -e "${RED}✗ Not logged in to Docker Hub${NC}"
-  echo -e "Please run: ${YELLOW}docker login${NC}"
-  exit 1
+# Try to check authentication by verifying credentials file exists
+if [ ! -f ~/.docker/config.json ] || ! grep -q "docker.io" ~/.docker/config.json 2>/dev/null; then
+  echo -e "${YELLOW}⚠ Could not verify Docker Hub authentication${NC}"
+  echo -e "${YELLOW}Attempting to push anyway...${NC}"
+  echo ""
+else
+  echo -e "${GREEN}✓ Docker Hub credentials found${NC}"
+  echo ""
 fi
-echo -e "${GREEN}✓ Authenticated to Docker Hub${NC}"
-echo ""
 
 # Push backend
 echo -e "${GREEN}[1/4] Pushing backend:${VERSION}...${NC}"
