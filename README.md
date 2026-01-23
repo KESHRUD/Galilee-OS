@@ -11,6 +11,14 @@ Progressive Web Application complète pour la gestion de projets, révisions IA 
 [![PWA Ready](https://img.shields.io/badge/PWA-Ready-5A0FC8)](https://web.dev/progressive-web-apps/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+### 🐳 Docker Images
+
+[![Docker Backend](https://img.shields.io/docker/v/mouenisamira/galilee-os-backend?label=backend&logo=docker)](https://hub.docker.com/r/mouenisamira/galilee-os-backend)
+[![Docker Frontend](https://img.shields.io/docker/v/mouenisamira/galilee-os-frontend?label=frontend&logo=docker)](https://hub.docker.com/r/mouenisamira/galilee-os-frontend)
+[![Docker Pulls](https://img.shields.io/docker/pulls/mouenisamira/galilee-os-backend?label=pulls)](https://hub.docker.com/r/mouenisamira/galilee-os-backend)
+[![Image Size Backend](https://img.shields.io/docker/image-size/mouenisamira/galilee-os-backend/latest?label=backend%20size)](https://hub.docker.com/r/mouenisamira/galilee-os-backend)
+[![Image Size Frontend](https://img.shields.io/docker/image-size/mouenisamira/galilee-os-frontend/latest?label=frontend%20size)](https://hub.docker.com/r/mouenisamira/galilee-os-frontend)
+
 ---
 
 **🌐 [Application Live](https://galilee-os.netlify.app/)** • **📖 [Documentation](#-table-des-matières)** • **💻 [GitHub Repository](https://github.com/KESHRUD/Galilee-OS)**
@@ -28,6 +36,11 @@ Université Sorbonne Paris Nord - Sup Galilée
 Étudiante Ingénieure en Informatique - ING2
 Université Sorbonne Paris Nord - Sup Galilée  
 
+**AMIRA Mouenis**
+Étudiant Ingénieur en Informatique - ING2
+Université Sorbonne Paris Nord - Sup Galilée  
+[@Mouenisam](https://github.com/Mouenisam)
+
 ---
 
 ## 📋 Table des Matières
@@ -41,6 +54,7 @@ Université Sorbonne Paris Nord - Sup Galilée
 - [Guide d'Utilisation](#-guide-dutilisation)
 - [Tests & Qualité](#-tests--qualité)
 - [Déploiement](#-déploiement)
+- [Docker & Docker Hub](#-docker--docker-hub)
 - [Conformité PWA](#-conformité-pwa)
 - [Base de données](#-PostgresSQL + TypeORM)
 - [Roadmap](#-roadmap)
@@ -630,6 +644,107 @@ npm run lint:fix
               │ Lint &  │   │   E2E   │
               │  Unit   │   │  Tests  │
               └─────────┘   └─────────┘
+```
+
+---
+
+## 🐳 Docker & Docker Hub
+
+### Quick Start with Docker
+
+Deploy Galilee OS in production using pre-built Docker images:
+
+```bash
+# 1. Download configuration
+wget https://raw.githubusercontent.com/KESHRUD/Galilee-OS/main/docker-compose.prod.yml
+wget https://raw.githubusercontent.com/KESHRUD/Galilee-OS/main/.env.production.example
+
+# 2. Configure environment
+cp .env.production.example .env
+nano .env  # Edit DB_PASSWORD, JWT_SECRET
+
+# 3. Deploy
+docker-compose -f docker-compose.prod.yml up -d
+
+# 4. Run migrations
+docker-compose -f docker-compose.prod.yml exec backend npm run migration:run
+```
+
+**Access:** http://localhost (Frontend) • http://localhost:3000 (Backend API)
+
+### Docker Images
+
+| Service | Image | Size | Base |
+|---------|-------|------|------|
+| **Backend** | [`mouenisamira/galilee-os-backend`](https://hub.docker.com/r/mouenisamira/galilee-os-backend) | ~285MB | `node:20-alpine` |
+| **Frontend** | [`mouenisamira/galilee-os-frontend`](https://hub.docker.com/r/mouenisamira/galilee-os-frontend) | ~45MB | `nginx:1.27-alpine` |
+
+### Pull Images
+
+```bash
+# Latest version
+docker pull mouenisamira/galilee-os-backend:latest
+docker pull mouenisamira/galilee-os-frontend:latest
+
+# Specific version
+docker pull mouenisamira/galilee-os-backend:1.0.0
+docker pull mouenisamira/galilee-os-frontend:1.0.0
+```
+
+### Optimization Results
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| **Total Image Size** | ~2GB | ~330MB | **-83%** ↓ |
+| **Backend Build Time** | 5min 20s | 1min 45s | **-67%** ↓ |
+| **Frontend Build Time** | 8min 10s | 2min 30s | **-69%** ↓ |
+
+**Techniques used:**
+- ✅ Multi-stage builds (2 stages: builder + production)
+- ✅ Alpine Linux base images
+- ✅ Production dependencies only
+- ✅ Layer caching optimization
+
+### Scripts & Automation
+
+```bash
+# Automated deployment
+./scripts/deploy.sh production
+
+# Database backup
+./scripts/backup.sh
+
+# Health check
+./scripts/health-check.sh
+
+# Manual build & push
+./scripts/docker-build.sh 1.0.0
+./scripts/docker-push.sh 1.0.0
+```
+
+### Documentation
+
+- 📖 **[Complete Deployment Guide](docs/DEPLOYMENT.md)** - Step-by-step production setup
+- 🐳 **[Docker Architecture](docs/DOCKER.md)** - Technical details & best practices
+- 🔧 **[Troubleshooting](docs/DEPLOYMENT.md#troubleshooting)** - Common issues & solutions
+
+### CI/CD Automation
+
+GitHub Actions workflows automatically:
+- ✅ Build Docker images on push to `main`/`develop`
+- ✅ Run tests and linting
+- ✅ Push to Docker Hub on tag creation (`v*.*.*`)
+- ✅ Create GitHub Release with deployment instructions
+
+```bash
+# Create a new release
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+
+# GitHub Actions will automatically:
+# 1. Build & test
+# 2. Push to Docker Hub
+# 3. Create GitHub Release
 ```
 
 ---
