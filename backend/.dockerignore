@@ -1,0 +1,55 @@
+# ============================================================================
+# Backend .dockerignore
+# Exclude unnecessary files from Docker build context
+# ============================================================================
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+coverage/
+
+# Tests
+src/tests/
+*.test.ts
+*.spec.ts
+__tests__/
+test/
+**/*.test.js
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.test
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
