@@ -13,7 +13,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-DOCKER_USERNAME="${DOCKER_USERNAME:-mouenisamira}"  # Replace with your Docker Hub username
+DOCKER_USERNAME="${DOCKER_USERNAME:-mouenis}"  # Replace with your Docker Hub username
 VERSION="${1:-latest}"
 BACKEND_IMAGE="${DOCKER_USERNAME}/galilee-os-backend"
 FRONTEND_IMAGE="${DOCKER_USERNAME}/galilee-os-frontend"

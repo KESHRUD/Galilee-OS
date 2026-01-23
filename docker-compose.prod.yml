@@ -9,7 +9,7 @@ services:
   # ==========================================================================
   backend:
     # ✅ Pull from Docker Hub instead of building
-    image: ${DOCKER_USERNAME:-mouenisamira}/galilee-os-backend:${VERSION:-latest}
+    image: ${DOCKER_USERNAME:-mouenis}/galilee-os-backend:${VERSION:-latest}
     container_name: kanban-backend
     restart: unless-stopped
     ports:
@@ -46,7 +46,7 @@ services:
   # ==========================================================================
   frontend:
     # ✅ Pull from Docker Hub instead of building
-    image: ${DOCKER_USERNAME:-mouenisamira}/galilee-os-frontend:${VERSION:-latest}
+    image: ${DOCKER_USERNAME:-mouenis}/galilee-os-frontend:${VERSION:-latest}
     container_name: kanban-frontend
     restart: unless-stopped
     ports:

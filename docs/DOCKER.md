@@ -63,11 +63,11 @@ All containers communicate via a **custom bridge network** (`kanban-network`):
 
 ```bash
 # Docker Hub images
-mouenisamira/galilee-os-backend:latest
-mouenisamira/galilee-os-backend:1.0.0
+mouenis/galilee-os-backend:latest
+mouenis/galilee-os-backend:1.0.0
 
-mouenisamira/galilee-os-frontend:latest
-mouenisamira/galilee-os-frontend:1.0.0
+mouenis/galilee-os-frontend:latest
+mouenis/galilee-os-frontend:1.0.0
 ```
 
 ---

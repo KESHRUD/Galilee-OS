@@ -1,0 +1,77 @@
+# ============================================================================
+# Docker Ignore File
+# Excludes files from Docker build context for faster builds
+# ============================================================================
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+CHANGELOG.md
+LICENSE
+docs/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# Dependencies (will be reinstalled in container)
+**/node_modules/
+**/package-lock.json
+
+# Build outputs (will be regenerated)
+**/dist/
+**/build/
+**/dev-dist/
+**/dist-ssr/
+**/.next/
+**/.nuxt/
+**/.vite/
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/coverage/
+.nyc_output/
+
+# Environment files (use docker-compose env instead)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Temporary files
+**/tmp/
+**/temp/
+**/.cache/
+
+# Docker files themselves
+Dockerfile*
+docker-compose*.yml
+.dockerignore

@@ -150,7 +150,7 @@ docker-compose -f docker-compose.prod.yml logs -f
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DOCKER_USERNAME` | Your Docker Hub username | `mouenisamira` |
+| `DOCKER_USERNAME` | Your Docker Hub username | `mouenis` |
 | `VERSION` | Image version to deploy | `latest` or `1.0.0` |
 | `DB_PASSWORD` | PostgreSQL password | `MySecure!Pass123` |
 | `JWT_SECRET` | JWT secret key | (generate with `openssl rand -base64 32`) |
@@ -336,7 +336,7 @@ docker system df
 - [Docker Documentation](docs/DOCKER.md)
 - [API Documentation](docs/API.md)
 - [GitHub Repository](https://github.com/KESHRUD/Galilee-OS)
-- [Docker Hub Images](https://hub.docker.com/u/mouenisamira)
+- [Docker Hub Images](https://hub.docker.com/u/mouenis)
 
 ---
 

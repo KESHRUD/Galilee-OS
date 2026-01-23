@@ -6,7 +6,7 @@ on:
     branches: [ main, develop ]
 
 env:
-  DOCKER_USERNAME: mouenisamira  # Replace with your Docker Hub username
+  DOCKER_USERNAME: mouenis  # Replace with your Docker Hub username
 
 jobs:
   build:

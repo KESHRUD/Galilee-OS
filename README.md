@@ -13,11 +13,11 @@ Progressive Web Application complète pour la gestion de projets, révisions IA 
 
 ### 🐳 Docker Images
 
-[![Docker Backend](https://img.shields.io/docker/v/mouenisamira/galilee-os-backend?label=backend&logo=docker)](https://hub.docker.com/r/mouenisamira/galilee-os-backend)
-[![Docker Frontend](https://img.shields.io/docker/v/mouenisamira/galilee-os-frontend?label=frontend&logo=docker)](https://hub.docker.com/r/mouenisamira/galilee-os-frontend)
-[![Docker Pulls](https://img.shields.io/docker/pulls/mouenisamira/galilee-os-backend?label=pulls)](https://hub.docker.com/r/mouenisamira/galilee-os-backend)
-[![Image Size Backend](https://img.shields.io/docker/image-size/mouenisamira/galilee-os-backend/latest?label=backend%20size)](https://hub.docker.com/r/mouenisamira/galilee-os-backend)
-[![Image Size Frontend](https://img.shields.io/docker/image-size/mouenisamira/galilee-os-frontend/latest?label=frontend%20size)](https://hub.docker.com/r/mouenisamira/galilee-os-frontend)
+[![Docker Backend](https://img.shields.io/docker/v/mouenis/galilee-os-backend?label=backend&logo=docker)](https://hub.docker.com/r/mouenis/galilee-os-backend)
+[![Docker Frontend](https://img.shields.io/docker/v/mouenis/galilee-os-frontend?label=frontend&logo=docker)](https://hub.docker.com/r/mouenis/galilee-os-frontend)
+[![Docker Pulls](https://img.shields.io/docker/pulls/mouenis/galilee-os-backend?label=pulls)](https://hub.docker.com/r/mouenis/galilee-os-backend)
+[![Image Size Backend](https://img.shields.io/docker/image-size/mouenis/galilee-os-backend/latest?label=backend%20size)](https://hub.docker.com/r/mouenis/galilee-os-backend)
+[![Image Size Frontend](https://img.shields.io/docker/image-size/mouenis/galilee-os-frontend/latest?label=frontend%20size)](https://hub.docker.com/r/mouenis/galilee-os-frontend)
 
 ---
 
@@ -676,19 +676,19 @@ docker-compose -f docker-compose.prod.yml exec backend npm run migration:run
 
 | Service | Image | Size | Base |
 |---------|-------|------|------|
-| **Backend** | [`mouenisamira/galilee-os-backend`](https://hub.docker.com/r/mouenisamira/galilee-os-backend) | ~285MB | `node:20-alpine` |
-| **Frontend** | [`mouenisamira/galilee-os-frontend`](https://hub.docker.com/r/mouenisamira/galilee-os-frontend) | ~45MB | `nginx:1.27-alpine` |
+| **Backend** | [`mouenis/galilee-os-backend`](https://hub.docker.com/r/mouenis/galilee-os-backend) | ~285MB | `node:20-alpine` |
+| **Frontend** | [`mouenis/galilee-os-frontend`](https://hub.docker.com/r/mouenis/galilee-os-frontend) | ~45MB | `nginx:1.27-alpine` |
 
 ### Pull Images
 
 ```bash
 # Latest version
-docker pull mouenisamira/galilee-os-backend:latest
-docker pull mouenisamira/galilee-os-frontend:latest
+docker pull mouenis/galilee-os-backend:latest
+docker pull mouenis/galilee-os-frontend:latest
 
 # Specific version
-docker pull mouenisamira/galilee-os-backend:1.0.0
-docker pull mouenisamira/galilee-os-frontend:1.0.0
+docker pull mouenis/galilee-os-backend:1.0.0
+docker pull mouenis/galilee-os-frontend:1.0.0
 ```
 
 ### Optimization Results
