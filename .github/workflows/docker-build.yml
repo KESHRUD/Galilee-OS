@@ -26,6 +26,7 @@ jobs:
           context: .
           file: ./docker/Dockerfile.backend
           push: false
+          load: true  # Load image to local Docker daemon
           tags: |
             ${{ env.DOCKER_USERNAME }}/galilee-os-backend:${{ github.sha }}
             ${{ env.DOCKER_USERNAME }}/galilee-os-backend:latest
@@ -38,6 +39,7 @@ jobs:
           context: .
           file: ./docker/Dockerfile.frontend
           push: false
+          load: true  # Load image to local Docker daemon
           tags: |
             ${{ env.DOCKER_USERNAME }}/galilee-os-frontend:${{ github.sha }}
             ${{ env.DOCKER_USERNAME }}/galilee-os-frontend:latest

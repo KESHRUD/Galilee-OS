@@ -13,6 +13,9 @@ jobs:
   publish:
     name: Build and Push to Docker Hub
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required to create releases
+      packages: write  # Required to push Docker images
     
     steps:
       - name: Checkout code
